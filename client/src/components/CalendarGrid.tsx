@@ -61,6 +61,7 @@ export function CalendarGrid({
               key={day.dateKey}
               className={[
                 'day-cell',
+                day.isNextMonth ? 'day-cell-next-month' : '',
                 day.isToday ? 'day-cell-today' : '',
                 day.isPast ? 'day-cell-past' : '',
                 !day.isCurrentMonth && display.gridMode === 'month'

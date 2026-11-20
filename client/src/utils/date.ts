@@ -7,6 +7,7 @@ export interface GridDay {
   isToday: boolean;
   isPast: boolean;
   isCurrentMonth: boolean;
+  isNextMonth: boolean;
   events: CalendarEvent[];
 }
 
@@ -194,7 +195,9 @@ export function buildCalendarGrid(
 ): { days: GridDay[]; monthHeading: string; weekCount: number } {
   const todayKey = getDateKeyInTimeZone(now, timeZone);
   const todayUtc = parseDateKey(todayKey);
+  const currentYear = todayUtc.getUTCFullYear();
   const currentMonth = todayUtc.getUTCMonth();
+  const currentMonthIndex = currentYear * 12 + currentMonth;
 
   let startKey: string;
   let totalDays: number;
@@ -223,6 +226,7 @@ export function buildCalendarGrid(
   for (let i = 0; i < totalDays; i++) {
     const dateKey = addDaysToKey(startKey, i);
     const dt = parseDateKey(dateKey);
+    const dayMonthIndex = dt.getUTCFullYear() * 12 + dt.getUTCMonth();
     days.push({
       dateKey,
       dayNumber: dt.getUTCDate(),
@@ -232,7 +236,8 @@ export function buildCalendarGrid(
       }).format(dt),
       isToday: dateKey === todayKey,
       isPast: dateKey < todayKey,
-      isCurrentMonth: dt.getUTCMonth() === currentMonth,
+      isCurrentMonth: dayMonthIndex === currentMonthIndex,
+      isNextMonth: dayMonthIndex > currentMonthIndex,
       events: eventsByDay.get(dateKey) ?? [],
     });
   }

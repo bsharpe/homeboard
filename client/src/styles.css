@@ -3,6 +3,7 @@
   --bg-panel: rgba(17, 24, 39, 0.72);
   --bg-panel-solid: #111827;
   --bg-cell: rgba(15, 23, 42, 0.56);
+  --bg-cell-next-month: rgba(56, 189, 248, 0.075);
   --bg-cell-today: rgba(245, 158, 11, 0.11);
   --border-subtle: rgba(148, 163, 184, 0.14);
   --border-strong: rgba(148, 163, 184, 0.26);
@@ -456,6 +457,15 @@ body.board-mode::-webkit-scrollbar {
   border-radius: var(--radius-md);
   background: var(--bg-cell);
   border: 1px solid rgba(148, 163, 184, 0.09);
+}
+
+.day-cell-next-month {
+  background: var(--bg-cell-next-month);
+  border-color: rgba(56, 189, 248, 0.18);
+}
+
+.day-cell-next-month .day-month-tag {
+  color: rgba(125, 211, 252, 0.85);
 }
 
 .day-cell-past {
