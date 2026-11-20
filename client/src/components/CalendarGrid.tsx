@@ -1,15 +1,22 @@
-import type { CalendarEvent, DisplayConfig } from '../../../shared/types';
+import type { CalendarEvent, CalendarSyncStatus, DisplayConfig } from '../../../shared/types';
 import {
   buildCalendarGrid,
   formatEventTime,
   getWeekdayHeaders,
 } from '../utils/date';
+import { dayHasCelebration, getEventDelight } from '../utils/eventDelight';
+import { getHolidayForDateKey } from '../utils/holidays';
+import { getMoonPhaseForDateKey } from '../utils/moon';
+import { EventDelightIcon } from './EventDelightIcon';
+import { HolidayAnimation } from './HolidayAnimation';
+import { MoonPhaseIcon } from './MoonPhaseIcon';
 
 interface CalendarGridProps {
   now: Date;
   timezone: string;
   display: DisplayConfig;
   eventsByDay: Map<string, CalendarEvent[]>;
+  calendarStatus: CalendarSyncStatus[];
 }
 
 const MAX_PILLS_PER_DAY = 4;
@@ -19,6 +26,7 @@ export function CalendarGrid({
   timezone,
   display,
   eventsByDay,
+  calendarStatus,
 }: CalendarGridProps) {
   const { days, monthHeading, weekCount } = buildCalendarGrid(
     now,
@@ -29,11 +37,28 @@ export function CalendarGrid({
   );
 
   const weekdays = getWeekdayHeaders(display.weekStartsOn);
+  const activeCalendars = calendarStatus.filter((c) => c.enabled);
 
   return (
     <section className="calendar-panel" aria-label="Family Calendar">
-      <div className="panel-header">
-        <h2 className="panel-title">{monthHeading}</h2>
+      <div className="panel-header calendar-panel-header">
+        <div className="calendar-header-left">
+          <h2 className="panel-title">{monthHeading}</h2>
+          {activeCalendars.length > 0 && (
+            <div className="calendar-legend">
+              {activeCalendars.map((cal) => (
+                <div
+                  key={cal.id}
+                  className={`legend-pill ${!cal.ok ? 'legend-pill-error' : ''}`}
+                  title={cal.error ? `Sync error: ${cal.error}` : `${cal.eventCount} events`}
+                >
+                  <span className="legend-dot" style={{ backgroundColor: cal.color }} />
+                  <span className="legend-name">{cal.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <span className="panel-subtitle">
           {display.gridMode === 'rolling-4w' ? '4-Week View' : 'Month View'}
         </span>
@@ -55,6 +80,9 @@ export function CalendarGrid({
           const showMonthPrefix = day.dayNumber === 1 || idx === 0;
           const visibleEvents = day.events.slice(0, MAX_PILLS_PER_DAY);
           const overflowCount = day.events.length - visibleEvents.length;
+          const holiday = getHolidayForDateKey(day.dateKey);
+          const moon = getMoonPhaseForDateKey(day.dateKey);
+          const hasCelebration = dayHasCelebration(day.events);
 
           return (
             <div
@@ -62,6 +90,8 @@ export function CalendarGrid({
               className={[
                 'day-cell',
                 day.isNextMonth ? 'day-cell-next-month' : '',
+                holiday ? `day-cell-holiday day-cell-holiday-${holiday.id}` : '',
+                hasCelebration && !holiday && !day.isPast ? 'day-cell-celebration' : '',
                 day.isToday ? 'day-cell-today' : '',
                 day.isPast ? 'day-cell-past' : '',
                 !day.isCurrentMonth && display.gridMode === 'month'
@@ -71,6 +101,15 @@ export function CalendarGrid({
                 .filter(Boolean)
                 .join(' ')}
             >
+              {holiday && <HolidayAnimation holiday={holiday.id} />}
+              {hasCelebration && !holiday && !day.isPast && (
+                <div className="day-sparkles" aria-hidden="true">
+                  <span className="day-sparkle day-sparkle-1" />
+                  <span className="day-sparkle day-sparkle-2" />
+                  <span className="day-sparkle day-sparkle-3" />
+                </div>
+              )}
+
               <div className="day-cell-header">
                 <span className={day.isToday ? 'day-num day-num-today' : 'day-num'}>
                   {showMonthPrefix && !day.isToday ? (
@@ -81,34 +120,54 @@ export function CalendarGrid({
                     day.dayNumber
                   )}
                 </span>
-                {day.isToday && <span className="today-tag">Today</span>}
+                <div className="day-header-right">
+                  {holiday && !day.isToday && (
+                    <span className="day-holiday-tag">{holiday.label}</span>
+                  )}
+                  {moon.majorPhase && (
+                    <span className="day-moon-badge" title={moon.name}>
+                      <MoonPhaseIcon phase={moon.phase} size={13} title={moon.name} />
+                    </span>
+                  )}
+                  {day.isToday && <span className="today-tag">Today</span>}
+                </div>
               </div>
 
               <div className="day-events">
-                {visibleEvents.map((ev) => (
-                  <div
-                    key={`${day.dateKey}-${ev.id}`}
-                    className={`event-pill ${ev.allDay ? 'event-pill-allday' : ''}`}
-                    style={
-                      ev.allDay
-                        ? {
-                            backgroundColor: `${ev.color}2e`,
-                            borderLeftColor: ev.color,
-                          }
-                        : {
-                            borderLeftColor: ev.color,
-                          }
-                    }
-                    title={ev.title}
-                  >
-                    {!ev.allDay && (
-                      <span className="event-pill-time">
-                        {formatEventTime(ev.start, timezone, display.clockFormat)}
-                      </span>
-                    )}
-                    <span className="event-pill-title">{ev.title}</span>
-                  </div>
-                ))}
+                {visibleEvents.map((ev) => {
+                  const delight = getEventDelight(ev.title);
+                  return (
+                    <div
+                      key={`${day.dateKey}-${ev.id}`}
+                      className={[
+                        'event-pill',
+                        ev.allDay ? 'event-pill-allday' : '',
+                        delight?.isCelebration ? 'event-pill-celebration' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      style={
+                        ev.allDay
+                          ? {
+                              backgroundColor: `${ev.color}2e`,
+                              borderLeftColor: ev.color,
+                            }
+                          : {
+                              borderLeftColor: ev.color,
+                            }
+                      }
+                      title={ev.title}
+                    >
+                      {delight && <EventDelightIcon kind={delight.kind} size={11} />}
+                      {!ev.allDay && (
+                        <span className="event-pill-time">
+                          {formatEventTime(ev.start, timezone, display.clockFormat)}
+                        </span>
+                      )}
+                      <span className="event-pill-title">{ev.title}</span>
+                    </div>
+                  );
+                })}
                 {overflowCount > 0 && (
                   <div className="event-overflow">+{overflowCount} more</div>
                 )}

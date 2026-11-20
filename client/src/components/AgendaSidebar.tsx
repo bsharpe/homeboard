@@ -7,6 +7,8 @@ import {
   getDateKeyInTimeZone,
 } from '../utils/date';
 import { WeatherIcon } from './WeatherIcon';
+import { getEventDelight } from '../utils/eventDelight';
+import { EventDelightIcon } from './EventDelightIcon';
 
 interface AgendaSidebarProps {
   now: Date;
@@ -62,15 +64,26 @@ export function AgendaSidebar({
                 ) : (
                   <div className="agenda-items">
                     {group.events.map((ev) => {
-                      const isLive =
-                        !ev.allDay &&
-                        new Date(ev.start).getTime() <= now.getTime() &&
-                        new Date(ev.end).getTime() > now.getTime();
+                      const startMs = new Date(ev.start).getTime();
+                      const endMs = new Date(ev.end).getTime();
+                      const nowMs = now.getTime();
+                      const isLive = !ev.allDay && startMs <= nowMs && endMs > nowMs;
+                      const liveProgressPct =
+                        isLive && endMs > startMs
+                          ? Math.min(100, Math.max(0, ((nowMs - startMs) / (endMs - startMs)) * 100))
+                          : 0;
+                      const delight = getEventDelight(ev.title);
 
                       return (
                         <div
                           key={`${group.dateKey}-${ev.id}`}
-                          className={`agenda-item ${isLive ? 'agenda-item-live' : ''}`}
+                          className={[
+                            'agenda-item',
+                            isLive ? 'agenda-item-live' : '',
+                            delight?.isCelebration ? 'agenda-item-celebration' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
                         >
                           <span
                             className="agenda-color-bar"
@@ -78,8 +91,16 @@ export function AgendaSidebar({
                           />
                           <div className="agenda-item-body">
                             <div className="agenda-item-top">
-                              <span className="agenda-item-title">{ev.title}</span>
-                              {isLive && <span className="live-dot">Now</span>}
+                              <span className="agenda-item-title-wrap">
+                                {delight && <EventDelightIcon kind={delight.kind} size={13} />}
+                                <span className="agenda-item-title">{ev.title}</span>
+                              </span>
+                              {isLive && (
+                                <span className="live-dot">
+                                  <span className="live-beacon" aria-hidden="true" />
+                                  Now
+                                </span>
+                              )}
                             </div>
                             <div className="agenda-item-meta">
                               <span className="agenda-item-time">
@@ -93,6 +114,14 @@ export function AgendaSidebar({
                               )}
                             </div>
                           </div>
+                          {isLive && (
+                            <div className="agenda-live-progress" aria-hidden="true">
+                              <div
+                                className="agenda-live-progress-fill"
+                                style={{ width: `${liveProgressPct}%` }}
+                              />
+                            </div>
+                          )}
                         </div>
                       );
                     })}

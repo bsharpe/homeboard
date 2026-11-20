@@ -1,6 +1,8 @@
 import { Droplets, RefreshCw, Settings, Wind, WifiOff } from 'lucide-react';
-import type { CalendarSyncStatus, DisplayConfig, WeatherData } from '../../../shared/types';
+import type { DisplayConfig, WeatherData } from '../../../shared/types';
 import { formatClock, formatFullDate, formatHourlyLabel } from '../utils/date';
+import { getMoonPhaseForDate } from '../utils/moon';
+import { MoonPhaseIcon } from './MoonPhaseIcon';
 import { WeatherIcon } from './WeatherIcon';
 
 interface HeaderBarProps {
@@ -8,7 +10,6 @@ interface HeaderBarProps {
   timezone: string;
   display: DisplayConfig;
   weather: WeatherData | null;
-  calendarStatus: CalendarSyncStatus[];
   usingDemoData: boolean;
   offline: boolean;
   refreshing: boolean;
@@ -21,7 +22,6 @@ export function HeaderBar({
   timezone,
   display,
   weather,
-  calendarStatus,
   usingDemoData,
   offline,
   refreshing,
@@ -34,8 +34,8 @@ export function HeaderBar({
   const windUnit = weather?.unit === 'celsius' ? 'km/h' : 'mph';
   const todayForecast = weather?.daily[0];
   const hourlyPreview = weather?.hourly.slice(0, 6) ?? [];
-
-  const activeCalendars = calendarStatus.filter((c) => c.enabled);
+  const moon = getMoonPhaseForDate(now);
+  const moonIlluminationPct = Math.round(moon.illumination * 100);
 
   return (
     <header className="board-header">
@@ -111,24 +111,29 @@ export function HeaderBar({
       )}
 
       <div className="header-right">
-        <div className="calendar-legend">
-          {activeCalendars.map((cal) => (
-            <div
-              key={cal.id}
-              className={`legend-pill ${!cal.ok ? 'legend-pill-error' : ''}`}
-              title={cal.error ? `Sync error: ${cal.error}` : `${cal.eventCount} events`}
-            >
-              <span className="legend-dot" style={{ backgroundColor: cal.color }} />
-              <span className="legend-name">{cal.name}</span>
-            </div>
-          ))}
-          {usingDemoData && <span className="demo-badge">Demo</span>}
-          {offline && (
-            <span className="offline-badge" title="Connection interrupted — showing cached data">
-              <WifiOff size={13} /> Offline
-            </span>
-          )}
+        <div
+          className="header-moon"
+          title={`${moon.name} · ${moonIlluminationPct}% illuminated`}
+        >
+          <div className="header-moon-icon">
+            <MoonPhaseIcon phase={moon.phase} size={46} />
+          </div>
+          <div className="header-moon-text">
+            <span className="header-moon-name">{moon.name}</span>
+            <span className="header-moon-meta">{moonIlluminationPct}% illuminated</span>
+          </div>
         </div>
+
+        {(usingDemoData || offline) && (
+          <div className="header-status-badges">
+            {usingDemoData && <span className="demo-badge">Demo</span>}
+            {offline && (
+              <span className="offline-badge" title="Connection interrupted — showing cached data">
+                <WifiOff size={13} /> Offline
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="header-actions">
           <button

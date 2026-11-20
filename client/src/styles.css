@@ -290,26 +290,88 @@ body.board-mode::-webkit-scrollbar {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 14px;
+}
+
+.header-moon {
+  display: flex;
+  align-items: center;
   gap: 12px;
+  padding: 0 12px 0 0;
+}
+
+.header-moon-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(226, 232, 240, 0.08),
+    rgba(9, 13, 22, 0.55) 75%
+  );
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.header-moon-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.2;
+}
+
+.header-moon-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.header-moon-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.header-status-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-panel-header {
+  align-items: center;
+  gap: 12px;
+}
+
+.calendar-header-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
 }
 
 .calendar-legend {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: center;
   gap: 6px;
-  max-width: 280px;
 }
 
 .legend-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid var(--border-subtle);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: var(--text-secondary);
 }
 
@@ -449,6 +511,7 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .day-cell {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -468,6 +531,65 @@ body.board-mode::-webkit-scrollbar {
   color: rgba(125, 211, 252, 0.85);
 }
 
+.day-cell-celebration {
+  background:
+    radial-gradient(ellipse 90% 70% at 95% 0%, rgba(244, 114, 182, 0.14), transparent 62%),
+    radial-gradient(ellipse 80% 60% at 5% 100%, rgba(251, 191, 36, 0.12), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(244, 114, 182, 0.28);
+}
+
+.day-cell-next-month.day-cell-celebration {
+  background:
+    radial-gradient(ellipse 90% 70% at 95% 0%, rgba(244, 114, 182, 0.15), transparent 62%),
+    radial-gradient(ellipse 80% 60% at 5% 100%, rgba(251, 191, 36, 0.12), transparent 60%),
+    var(--bg-cell-next-month);
+}
+
+.day-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.day-sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fde68a;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.85);
+  opacity: 0;
+  animation: sparkle-float 5.5s ease-in-out infinite;
+}
+
+.day-sparkle-1 {
+  right: 14%;
+  bottom: 18%;
+  background: #f9a8d4;
+  box-shadow: 0 0 6px rgba(244, 114, 182, 0.85);
+  animation-delay: 0s;
+}
+
+.day-sparkle-2 {
+  right: 34%;
+  bottom: 10%;
+  width: 3px;
+  height: 3px;
+  animation-delay: 1.8s;
+}
+
+.day-sparkle-3 {
+  right: 8%;
+  bottom: 42%;
+  width: 3px;
+  height: 3px;
+  background: #7dd3fc;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.85);
+  animation-delay: 3.4s;
+}
+
 .day-cell-past {
   opacity: 0.52;
 }
@@ -478,9 +600,14 @@ body.board-mode::-webkit-scrollbar {
 
 .day-cell-today {
   opacity: 1;
-  background: var(--bg-cell-today);
+  background:
+    radial-gradient(ellipse 95% 75% at 50% 0%, rgba(245, 158, 11, 0.16), transparent 70%),
+    var(--bg-cell-today);
   border: 1px solid rgba(245, 158, 11, 0.52);
-  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.15);
+  box-shadow:
+    inset 0 0 0 1px rgba(245, 158, 11, 0.14),
+    0 0 14px rgba(245, 158, 11, 0.08);
+  animation: today-breathe 6.5s ease-in-out infinite;
 }
 
 .day-cell-header {
@@ -509,6 +636,7 @@ body.board-mode::-webkit-scrollbar {
   background: var(--accent-amber);
   color: #0b1120;
   font-weight: 700;
+  animation: today-badge-glow 6.5s ease-in-out infinite;
 }
 
 .day-month-tag {
@@ -534,6 +662,7 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .event-pill {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -545,6 +674,62 @@ body.board-mode::-webkit-scrollbar {
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.event-pill-celebration::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 75%
+  );
+  transform: translateX(-120%);
+  animation: celebration-sheen 7.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.event-delight-icon {
+  flex-shrink: 0;
+  opacity: 0.88;
+}
+
+.event-delight-birthday {
+  color: #f472b6;
+}
+
+.event-delight-holiday {
+  color: #fcd34d;
+}
+
+.event-delight-travel {
+  color: #38bdf8;
+}
+
+.event-delight-outdoors {
+  color: #34d399;
+}
+
+.event-delight-sports {
+  color: #fbbf24;
+}
+
+.event-delight-music {
+  color: #c084fc;
+}
+
+.event-delight-food {
+  color: #fb923c;
+}
+
+.event-delight-health {
+  color: #fb7185;
+}
+
+.event-delight-school {
+  color: #7dd3fc;
 }
 
 .event-pill-allday {
@@ -660,6 +845,8 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .agenda-item {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: stretch;
   gap: 10px;
@@ -672,6 +859,28 @@ body.board-mode::-webkit-scrollbar {
 .agenda-item-live {
   background: rgba(245, 158, 11, 0.1);
   border-color: rgba(245, 158, 11, 0.35);
+}
+
+.agenda-item-celebration {
+  background:
+    radial-gradient(ellipse 80% 90% at 100% 0%, rgba(244, 114, 182, 0.12), transparent 65%),
+    rgba(255, 255, 255, 0.04);
+  border-color: rgba(244, 114, 182, 0.24);
+}
+
+.agenda-live-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(245, 158, 11, 0.18);
+}
+
+.agenda-live-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fde68a);
+  transition: width 1s linear;
 }
 
 .agenda-color-bar {
@@ -695,6 +904,13 @@ body.board-mode::-webkit-scrollbar {
   gap: 8px;
 }
 
+.agenda-item-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .agenda-item-title {
   font-size: 0.92rem;
   font-weight: 600;
@@ -705,14 +921,26 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 999px;
   background: rgba(245, 158, 11, 0.22);
   color: #fcd34d;
   flex-shrink: 0;
+}
+
+.live-beacon {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fbbf24;
+  box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+  animation: live-ping 2.2s ease-out infinite;
 }
 
 .agenda-item-meta {
@@ -1245,5 +1473,671 @@ body.board-mode::-webkit-scrollbar {
   }
   .board-main {
     grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   AMBIENT DELIGHT ANIMATIONS (Weather, Today, Celebrations)
+   ========================================================= */
+
+.wi-svg {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.wi-sun-rays {
+  animation: wi-spin 28s linear infinite;
+}
+
+.wi-sun-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wi-sun-pulse 5.5s ease-in-out infinite;
+}
+
+.wi-moon {
+  animation: wi-moon-rock 7s ease-in-out infinite;
+}
+
+.wi-star {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wi-twinkle 3.6s ease-in-out infinite;
+}
+
+.wi-star-2 {
+  animation-delay: 1.6s;
+}
+
+.wi-cloud-drift {
+  animation: wi-drift 6.5s ease-in-out infinite;
+}
+
+.wi-cloud-drift-slow {
+  animation: wi-drift-slow 9s ease-in-out infinite;
+}
+
+.wi-fog-1 {
+  animation: wi-fog-slide 5.5s ease-in-out infinite;
+}
+
+.wi-fog-2 {
+  animation: wi-fog-slide 6.5s ease-in-out infinite reverse;
+}
+
+.wi-rain {
+  animation: wi-rain-fall 1.35s linear infinite;
+}
+
+.wi-rain-2 {
+  animation-delay: 0.45s;
+}
+
+.wi-rain-3 {
+  animation-delay: 0.9s;
+}
+
+.wi-snow {
+  animation: wi-snow-fall 2.8s ease-in-out infinite;
+}
+
+.wi-snow-2 {
+  animation-delay: 0.9s;
+}
+
+.wi-snow-3 {
+  animation-delay: 1.8s;
+}
+
+.wi-bolt {
+  animation: wi-lightning 4.8s ease-in-out infinite;
+}
+
+@keyframes wi-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wi-sun-pulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes wi-moon-rock {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes wi-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes wi-drift {
+  0%,
+  100% {
+    transform: translateX(-0.9px);
+  }
+  50% {
+    transform: translateX(0.9px);
+  }
+}
+
+@keyframes wi-drift-slow {
+  0%,
+  100% {
+    transform: translateX(0.7px);
+  }
+  50% {
+    transform: translateX(-0.7px);
+  }
+}
+
+@keyframes wi-fog-slide {
+  0%,
+  100% {
+    transform: translateX(-1.4px);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateX(1.4px);
+    opacity: 0.95;
+  }
+}
+
+@keyframes wi-rain-fall {
+  0% {
+    transform: translate(0.6px, -2px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-1.2px, 3.8px);
+    opacity: 0;
+  }
+}
+
+@keyframes wi-snow-fall {
+  0% {
+    transform: translate(0px, -2px);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(1.2px, 0.5px);
+    opacity: 0.95;
+  }
+  65% {
+    transform: translate(-1.1px, 2.8px);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(0.6px, 5px);
+    opacity: 0;
+  }
+}
+
+@keyframes wi-lightning {
+  0%,
+  82%,
+  100% {
+    opacity: 0.45;
+    filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0));
+  }
+  85% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.95));
+  }
+  88% {
+    opacity: 0.35;
+  }
+  91% {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px rgba(253, 224, 71, 0.95));
+  }
+}
+
+@keyframes today-breathe {
+  0%,
+  100% {
+    border-color: rgba(245, 158, 11, 0.44);
+    box-shadow:
+      inset 0 0 0 1px rgba(245, 158, 11, 0.12),
+      0 0 10px rgba(245, 158, 11, 0.05);
+  }
+  50% {
+    border-color: rgba(251, 191, 36, 0.78);
+    box-shadow:
+      inset 0 0 0 1px rgba(251, 191, 36, 0.24),
+      0 0 22px rgba(245, 158, 11, 0.18);
+  }
+}
+
+@keyframes today-badge-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px rgba(245, 158, 11, 0.42);
+  }
+}
+
+@keyframes live-ping {
+  0% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.75);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(251, 191, 36, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+}
+
+@keyframes sparkle-float {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.5);
+  }
+  30% {
+    opacity: 0.85;
+    transform: translateY(-2px) scale(1.1);
+  }
+  65% {
+    opacity: 0.45;
+    transform: translateY(-8px) scale(0.85);
+  }
+  85% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.4);
+  }
+}
+
+@keyframes celebration-sheen {
+  0%,
+  72%,
+  100% {
+    transform: translateX(-120%);
+  }
+  92% {
+    transform: translateX(130%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wi-sun-rays,
+  .wi-sun-glow,
+  .wi-moon,
+  .wi-star,
+  .wi-cloud-drift,
+  .wi-cloud-drift-slow,
+  .wi-fog-1,
+  .wi-fog-2,
+  .wi-rain,
+  .wi-snow,
+  .wi-bolt,
+  .day-cell-today,
+  .day-num-today,
+  .live-beacon,
+  .day-sparkle,
+  .event-pill-celebration::after,
+  .moon-phase-full,
+  .hol-bat-1,
+  .hol-bat-2,
+  .hol-candle-glow,
+  .hol-candle-flicker,
+  .hol-leaf,
+  .hol-flake,
+  .hol-star-glow,
+  .hol-light,
+  .hol-firework,
+  .hol-heart,
+  .hol-shamrock,
+  .hol-egg {
+    animation: none !important;
+  }
+}
+
+/* =========================================================
+   HOLIDAY SCENES & MOON PHASES
+   ========================================================= */
+
+.day-cell-header,
+.day-events {
+  position: relative;
+  z-index: 1;
+}
+
+.day-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.day-holiday-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-moon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.moon-phase-svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.moon-phase-full {
+  filter: drop-shadow(0 0 4px rgba(226, 232, 240, 0.65));
+  animation: moon-full-glow 6s ease-in-out infinite;
+}
+
+.weather-moon-meta {
+  color: var(--text-secondary);
+}
+
+.holiday-scene {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 78px;
+  height: 62px;
+  pointer-events: none;
+  opacity: 0.72;
+  z-index: 0;
+}
+
+.holiday-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Per-holiday subtle cell backdrops */
+.day-cell-holiday-halloween {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(249, 115, 22, 0.16), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(139, 92, 246, 0.14), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(249, 115, 22, 0.32);
+}
+
+.day-cell-holiday-thanksgiving {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(234, 88, 12, 0.16), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 15% 0%, rgba(245, 158, 11, 0.12), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.day-cell-holiday-christmas {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(34, 197, 94, 0.15), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(251, 113, 133, 0.12), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.day-cell-holiday-new-years {
+  background:
+    radial-gradient(ellipse 90% 80% at 90% 90%, rgba(250, 204, 21, 0.14), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(56, 189, 248, 0.14), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(250, 204, 21, 0.3);
+}
+
+.day-cell-holiday-independence {
+  background:
+    radial-gradient(ellipse 90% 80% at 90% 90%, rgba(251, 113, 133, 0.14), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(56, 189, 248, 0.14), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.day-cell-holiday-valentines {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(244, 114, 182, 0.18), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(251, 113, 133, 0.12), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(244, 114, 182, 0.32);
+}
+
+.day-cell-holiday-st-patricks {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(34, 197, 94, 0.16), transparent 65%),
+    var(--bg-cell);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.day-cell-holiday-easter {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(167, 139, 250, 0.16), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(253, 224, 71, 0.1), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(196, 181, 253, 0.3);
+}
+
+/* Holiday SVG animations */
+.hol-bat-1 {
+  animation: hol-bat-fly 5.2s ease-in-out infinite;
+}
+
+.hol-bat-2 {
+  animation: hol-bat-fly 6.4s ease-in-out infinite reverse;
+}
+
+.hol-candle-glow {
+  animation: hol-flicker 3.2s ease-in-out infinite;
+}
+
+.hol-candle-flicker {
+  animation: hol-flicker 2.4s ease-in-out infinite;
+}
+
+.hol-leaf {
+  animation: hol-leaf-fall 6.5s ease-in-out infinite;
+}
+
+.hol-leaf-2 {
+  animation-delay: 2.1s;
+  animation-duration: 7.2s;
+}
+
+.hol-leaf-3 {
+  animation-delay: 4.1s;
+  animation-duration: 5.8s;
+}
+
+.hol-flake {
+  animation: hol-snow-drift 4.5s ease-in-out infinite;
+}
+
+.hol-flake-2 {
+  animation-delay: 1.5s;
+}
+
+.hol-flake-3 {
+  animation-delay: 3s;
+}
+
+.hol-star-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wi-twinkle 3s ease-in-out infinite;
+}
+
+.hol-light {
+  animation: hol-light-twinkle 2.6s ease-in-out infinite;
+}
+
+.hol-light-2 {
+  animation-delay: 0.85s;
+}
+
+.hol-light-3 {
+  animation-delay: 1.7s;
+}
+
+.hol-firework {
+  animation: hol-firework-burst 4.4s ease-out infinite;
+}
+
+.hol-firework-2 {
+  animation-delay: 2.1s;
+}
+
+.hol-heart {
+  animation: hol-heart-rise 5.2s ease-in-out infinite;
+}
+
+.hol-heart-2 {
+  animation-delay: 1.7s;
+}
+
+.hol-heart-3 {
+  animation-delay: 3.3s;
+}
+
+.hol-shamrock {
+  animation: wi-moon-rock 5.5s ease-in-out infinite;
+}
+
+.hol-egg {
+  animation: hol-egg-wobble 4.8s ease-in-out infinite;
+}
+
+@keyframes moon-full-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 3px rgba(226, 232, 240, 0.45));
+  }
+  50% {
+    filter: drop-shadow(0 0 7px rgba(248, 250, 252, 0.9));
+  }
+}
+
+@keyframes hol-bat-fly {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(-3deg);
+  }
+  50% {
+    transform: translate(5px, -3px) rotate(4deg);
+  }
+}
+
+@keyframes hol-flicker {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  30% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.65;
+  }
+  65% {
+    opacity: 0.98;
+  }
+  80% {
+    opacity: 0.72;
+  }
+}
+
+@keyframes hol-leaf-fall {
+  0% {
+    transform: translate(0, -4px) rotate(-10deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-6px, 12px) rotate(14deg);
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(4px, 26px) rotate(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes hol-snow-drift {
+  0% {
+    transform: translate(0, -4px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  60% {
+    transform: translate(3px, 14px);
+    opacity: 0.75;
+  }
+  100% {
+    transform: translate(-2px, 28px);
+    opacity: 0;
+  }
+}
+
+@keyframes hol-light-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes hol-firework-burst {
+  0% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(0.95);
+    opacity: 0.95;
+  }
+  65% {
+    transform: scale(1.18);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+@keyframes hol-heart-rise {
+  0% {
+    transform: translateY(6px) scale(0.82);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.85;
+  }
+  75% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-10px) scale(1.06);
+    opacity: 0;
+  }
+}
+
+@keyframes hol-egg-wobble {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
   }
 }

@@ -166,7 +166,6 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
           timezone={timezone}
           display={board.display}
           weather={board.weather}
-          calendarStatus={board.calendarStatus}
           usingDemoData={board.usingDemoData}
           offline={offline || Boolean(board.weather?.stale)}
           refreshing={refreshing}
@@ -180,6 +179,7 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
             timezone={timezone}
             display={board.display}
             eventsByDay={eventsByDay}
+            calendarStatus={board.calendarStatus}
           />
 
           <AgendaSidebar
