@@ -46,6 +46,7 @@ fi
 
 exec "$CHROMIUM_BIN" \
   --kiosk \
+  --password-store=basic \
   --noerrdialogs \
   --disable-infobars \
   --disable-session-crashed-bubble \
