@@ -1,7 +1,7 @@
 {
   "name": "homeboard",
   "version": "1.0.0",
-  "description": "Self-hosted family calendar & Santa Fe weather dashboard for Raspberry Pi",
+  "description": "Self-hosted family calendar & live weather dashboard for Raspberry Pi",
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -n server,client -c cyan,magenta \"npm run dev:server\" \"npm run dev:client\"",

@@ -1,15 +1,15 @@
 # Homeboard
 
-A self-hosted DakBoard replacement for Raspberry Pi displaying your family's calendars and live weather for **Santa Fe, NM** on a 16:9 landscape wall display.
+A self-hosted DakBoard replacement for Raspberry Pi displaying your family's calendars and live local weather on a 16:9 landscape wall display.
 
 ![Homeboard Demo](docs/demo.png)
 
 ## Features
 
 - **Private iCal / ICS Calendars** — Works with Google Calendar, Apple iCloud, Outlook, and Cozi with zero OAuth setup. Supports recurring events (`RRULE`, `EXDATE`), all-day/multi-day events, and color coding per family member.
-- **Santa Fe, NM Weather** — Current conditions, feels-like, wind, humidity, hourly forecast strip, and 5-day forecast with temperature range bars (powered by free, no-API-key [Open-Meteo](https://open-meteo.com/)).
+- **Live Local Weather** — Current conditions, feels-like, wind, humidity, hourly forecast strip, and 5-day forecast with temperature range bars for any city worldwide (powered by free, no-API-key [Open-Meteo](https://open-meteo.com/) with built-in city search and °F/°C support).
 - **4-Week Rolling / Month Grid + Upcoming Agenda** — Designed for across-the-room legibility on 16:9 displays.
-- **Phone-Friendly Settings UI** — Open `http://<pi-ip>:3000/settings` from any phone or laptop on your Wi-Fi to add/test calendars, pick colors, and tweak display preferences.
+- **Phone-Friendly Settings UI** — Open `http://<pi-ip>:3000/settings` from any phone or laptop on your Wi-Fi to set your weather location, add/test calendars, pick colors, and tweak display preferences.
 - **Kiosk Ready** — Auto-hiding cursor, overnight dimming schedule, subtle burn-in pixel shift, offline cache resilience, and one-command Raspberry Pi systemd + Chromium kiosk setup.
 
 ---
@@ -52,7 +52,7 @@ npm start
    ```bash
    sudo reboot
    ```
-5. From your phone or laptop on the same Wi-Fi, open `http://<pi-ip>:3000/settings` (or `http://homeboard.local:3000/settings` if your Pi hostname is `homeboard`) to paste your family's private ICS calendar links.
+5. From your phone or laptop on the same Wi-Fi, open `http://<pi-ip>:3000/settings` (or `http://homeboard.local:3000/settings` if your Pi hostname is `homeboard`) to search and set your city/timezone and paste your family's private ICS calendar links.
 
 ---
 
