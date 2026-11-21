@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCalendarGrid, mapEventsByDay } from './date';
+import { buildCalendarGrid, getMultiDaySpanInfo, mapEventsByDay } from './date';
 import type { CalendarEvent } from '../../../shared/types';
 
 describe('date grid & multi-day mapping', () => {
@@ -57,5 +57,58 @@ describe('date grid & multi-day mapping', () => {
     expect(lateGrid.days.find((d) => d.dateKey === '2026-12-31')?.isNextMonth).toBe(false);
     expect(lateGrid.days.find((d) => d.dateKey === '2027-01-01')?.isNextMonth).toBe(true);
     expect(lateGrid.days.find((d) => d.dateKey === '2027-01-23')?.isNextMonth).toBe(true);
+  });
+
+  it('computes connected multi-day ribbon edges across week boundaries', () => {
+    const trip: CalendarEvent = {
+      id: 'trip-1',
+      title: 'Ski Trip',
+      start: '2026-11-26',
+      end: '2026-11-30', // Thu 26, Fri 27, Sat 28, Sun 29
+      allDay: true,
+      calendarId: 'fam',
+      calendarName: 'Family',
+      color: '#34d399',
+    };
+
+    // Thu (col 4): start of span, connects right
+    expect(getMultiDaySpanInfo(trip, '2026-11-26', 4)).toEqual({
+      isMultiDay: true,
+      continuesLeft: false,
+      continuesRight: true,
+      connectsLeftInRow: false,
+      connectsRightInRow: true,
+      showLabel: true,
+    });
+
+    // Fri (col 5): middle of span, connects both sides, hides duplicate label
+    expect(getMultiDaySpanInfo(trip, '2026-11-27', 5)).toEqual({
+      isMultiDay: true,
+      continuesLeft: true,
+      continuesRight: true,
+      connectsLeftInRow: true,
+      connectsRightInRow: true,
+      showLabel: false,
+    });
+
+    // Sat (col 6): end of row, connects left only
+    expect(getMultiDaySpanInfo(trip, '2026-11-28', 6)).toEqual({
+      isMultiDay: true,
+      continuesLeft: true,
+      continuesRight: true,
+      connectsLeftInRow: true,
+      connectsRightInRow: false,
+      showLabel: false,
+    });
+
+    // Sun (col 0): start of new week row, shows label again, end of event
+    expect(getMultiDaySpanInfo(trip, '2026-11-29', 0)).toEqual({
+      isMultiDay: true,
+      continuesLeft: true,
+      continuesRight: false,
+      connectsLeftInRow: false,
+      connectsRightInRow: false,
+      showLabel: true,
+    });
   });
 });

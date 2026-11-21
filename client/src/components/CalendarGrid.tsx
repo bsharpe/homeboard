@@ -1,7 +1,14 @@
-import type { CalendarEvent, CalendarSyncStatus, DisplayConfig } from '../../../shared/types';
+import type {
+  CalendarEvent,
+  CalendarSyncStatus,
+  DailyForecastItem,
+  DisplayConfig,
+  WeatherData,
+} from '../../../shared/types';
 import {
   buildCalendarGrid,
   formatEventTime,
+  getMultiDaySpanInfo,
   getWeekdayHeaders,
 } from '../utils/date';
 import { dayHasCelebration, getEventDelight } from '../utils/eventDelight';
@@ -10,6 +17,7 @@ import { getMoonPhaseForDateKey } from '../utils/moon';
 import { EventDelightIcon } from './EventDelightIcon';
 import { HolidayAnimation } from './HolidayAnimation';
 import { MoonPhaseIcon } from './MoonPhaseIcon';
+import { WeatherIcon } from './WeatherIcon';
 
 interface CalendarGridProps {
   now: Date;
@@ -17,6 +25,7 @@ interface CalendarGridProps {
   display: DisplayConfig;
   eventsByDay: Map<string, CalendarEvent[]>;
   calendarStatus: CalendarSyncStatus[];
+  weather: WeatherData | null;
 }
 
 const MAX_PILLS_PER_DAY = 4;
@@ -27,6 +36,7 @@ export function CalendarGrid({
   display,
   eventsByDay,
   calendarStatus,
+  weather,
 }: CalendarGridProps) {
   const { days, monthHeading, weekCount } = buildCalendarGrid(
     now,
@@ -38,6 +48,12 @@ export function CalendarGrid({
 
   const weekdays = getWeekdayHeaders(display.weekStartsOn);
   const activeCalendars = calendarStatus.filter((c) => c.enabled);
+  const forecastByDay = new Map<string, DailyForecastItem>();
+  if (display.calendarWeather && weather?.daily) {
+    for (const item of weather.daily) {
+      forecastByDay.set(item.date, item);
+    }
+  }
 
   return (
     <section className="calendar-panel" aria-label="Family Calendar">
@@ -77,12 +93,14 @@ export function CalendarGrid({
         style={{ gridTemplateRows: `repeat(${weekCount}, minmax(0, 1fr))` }}
       >
         {days.map((day, idx) => {
+          const colIndex = idx % 7;
           const showMonthPrefix = day.dayNumber === 1 || idx === 0;
           const visibleEvents = day.events.slice(0, MAX_PILLS_PER_DAY);
           const overflowCount = day.events.length - visibleEvents.length;
           const holiday = getHolidayForDateKey(day.dateKey);
           const moon = getMoonPhaseForDateKey(day.dateKey);
           const hasCelebration = dayHasCelebration(day.events);
+          const dayForecast = forecastByDay.get(day.dateKey);
 
           return (
             <div
@@ -124,6 +142,19 @@ export function CalendarGrid({
                   {holiday && !day.isToday && (
                     <span className="day-holiday-tag">{holiday.label}</span>
                   )}
+                  {dayForecast && !day.isToday && (
+                    <span
+                      className="day-weather-badge"
+                      title={`${dayForecast.condition} · H ${dayForecast.tempMax}° / L ${dayForecast.tempMin}°${
+                        dayForecast.precipitationProbability >= 15
+                          ? ` · ${dayForecast.precipitationProbability}% precip`
+                          : ''
+                      }`}
+                    >
+                      <WeatherIcon code={dayForecast.weatherCode} isDay={true} size={13} />
+                      <span className="day-weather-temp">{dayForecast.tempMax}°</span>
+                    </span>
+                  )}
                   {moon.majorPhase && (
                     <span className="day-moon-badge" title={moon.name}>
                       <MoonPhaseIcon phase={moon.phase} size={13} title={moon.name} />
@@ -136,6 +167,7 @@ export function CalendarGrid({
               <div className="day-events">
                 {visibleEvents.map((ev) => {
                   const delight = getEventDelight(ev.title);
+                  const span = getMultiDaySpanInfo(ev, day.dateKey, colIndex);
                   return (
                     <div
                       key={`${day.dateKey}-${ev.id}`}
@@ -143,6 +175,10 @@ export function CalendarGrid({
                         'event-pill',
                         ev.allDay ? 'event-pill-allday' : '',
                         delight?.isCelebration ? 'event-pill-celebration' : '',
+                        span.isMultiDay ? 'event-pill-span' : '',
+                        span.connectsLeftInRow ? 'event-pill-span-left' : '',
+                        span.connectsRightInRow ? 'event-pill-span-right' : '',
+                        span.isMultiDay && !span.showLabel ? 'event-pill-span-cont' : '',
                       ]
                         .filter(Boolean)
                         .join(' ')}
@@ -150,7 +186,7 @@ export function CalendarGrid({
                         ev.allDay
                           ? {
                               backgroundColor: `${ev.color}2e`,
-                              borderLeftColor: ev.color,
+                              borderLeftColor: span.continuesLeft ? 'transparent' : ev.color,
                             }
                           : {
                               borderLeftColor: ev.color,
@@ -158,13 +194,21 @@ export function CalendarGrid({
                       }
                       title={ev.title}
                     >
-                      {delight && <EventDelightIcon kind={delight.kind} size={11} />}
-                      {!ev.allDay && (
-                        <span className="event-pill-time">
-                          {formatEventTime(ev.start, timezone, display.clockFormat)}
+                      {span.showLabel ? (
+                        <>
+                          {delight && <EventDelightIcon kind={delight.kind} size={11} />}
+                          {!ev.allDay && (
+                            <span className="event-pill-time">
+                              {formatEventTime(ev.start, timezone, display.clockFormat)}
+                            </span>
+                          )}
+                          <span className="event-pill-title">{ev.title}</span>
+                        </>
+                      ) : (
+                        <span className="event-pill-title event-pill-cont-label" aria-hidden="true">
+                          {ev.title}
                         </span>
                       )}
-                      <span className="event-pill-title">{ev.title}</span>
                     </div>
                   );
                 })}

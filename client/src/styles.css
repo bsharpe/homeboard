@@ -65,6 +65,7 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .board-shell {
+  position: relative;
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -73,10 +74,10 @@ body.board-mode::-webkit-scrollbar {
   gap: 14px;
   padding: 18px 22px 20px;
   background:
-    radial-gradient(ellipse 75% 55% at 15% 0%, rgba(217, 119, 6, 0.12), transparent 60%),
-    radial-gradient(ellipse 65% 50% at 88% 8%, rgba(56, 189, 248, 0.11), transparent 55%),
-    linear-gradient(180deg, #0b1120 0%, #070b13 100%);
-  transition: opacity 1.2s ease, transform 1s ease;
+    radial-gradient(ellipse 75% 55% at 15% 0%, var(--sky-glow-1, rgba(217, 119, 6, 0.12)), transparent 60%),
+    radial-gradient(ellipse 65% 50% at 88% 8%, var(--sky-glow-2, rgba(56, 189, 248, 0.11)), transparent 55%),
+    linear-gradient(180deg, var(--sky-bg-top, #0b1120) 0%, var(--sky-bg-bottom, #070b13) 100%);
+  transition: opacity 1.2s ease, transform 1s ease, background 1.5s ease;
 }
 
 .cursor-hidden,
@@ -115,6 +116,8 @@ body.board-mode::-webkit-scrollbar {
 
 /* Header Bar */
 .board-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -444,6 +447,8 @@ body.board-mode::-webkit-scrollbar {
 
 /* Main 2-column content */
 .board-main {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-height: 0;
   display: grid;
@@ -2139,5 +2144,635 @@ body.board-mode::-webkit-scrollbar {
   }
   50% {
     transform: rotate(3deg);
+  }
+}
+
+/* =========================================================
+   1. LIVING SKY & WEATHER-REACTIVE ATMOSPHERE
+   ========================================================= */
+
+.board-viewport[data-sky='dawn'] {
+  --sky-glow-1: rgba(251, 113, 133, 0.22);
+  --sky-glow-2: rgba(251, 191, 36, 0.18);
+  --sky-bg-top: #141226;
+  --sky-bg-bottom: #090d16;
+}
+
+.board-viewport[data-sky='morning'] {
+  --sky-glow-1: rgba(251, 191, 36, 0.16);
+  --sky-glow-2: rgba(56, 189, 248, 0.17);
+  --sky-bg-top: #0d1628;
+  --sky-bg-bottom: #080d17;
+}
+
+.board-viewport[data-sky='midday'] {
+  --sky-glow-1: rgba(56, 189, 248, 0.18);
+  --sky-glow-2: rgba(125, 211, 252, 0.13);
+  --sky-bg-top: #0c172b;
+  --sky-bg-bottom: #080d17;
+}
+
+.board-viewport[data-sky='golden'] {
+  --sky-glow-1: rgba(249, 115, 22, 0.24);
+  --sky-glow-2: rgba(244, 114, 182, 0.15);
+  --sky-bg-top: #1a1220;
+  --sky-bg-bottom: #090c14;
+}
+
+.board-viewport[data-sky='dusk'] {
+  --sky-glow-1: rgba(168, 85, 247, 0.2);
+  --sky-glow-2: rgba(234, 88, 12, 0.15);
+  --sky-bg-top: #121024;
+  --sky-bg-bottom: #070a13;
+}
+
+.board-viewport[data-sky='night'] {
+  --sky-glow-1: rgba(59, 130, 246, 0.11);
+  --sky-glow-2: rgba(99, 102, 241, 0.1);
+  --sky-bg-top: #080d1a;
+  --sky-bg-bottom: #050810;
+}
+
+.board-viewport[data-weather-mood='rain'],
+.board-viewport[data-weather-mood='storm'] {
+  --sky-glow-1: rgba(56, 189, 248, 0.14);
+  --sky-glow-2: rgba(100, 116, 139, 0.18);
+}
+
+.board-viewport[data-weather-mood='snow'] {
+  --sky-glow-1: rgba(186, 230, 253, 0.16);
+  --sky-glow-2: rgba(148, 163, 184, 0.14);
+}
+
+.board-viewport[data-weather-mood='fog'] {
+  --sky-glow-1: rgba(148, 163, 184, 0.14);
+  --sky-glow-2: rgba(100, 116, 139, 0.12);
+}
+
+.ambient-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.ambient-rain-drop {
+  position: absolute;
+  top: -12%;
+  width: 1.5px;
+  height: 54px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(125, 211, 252, 0.26) 65%,
+    rgba(186, 230, 253, 0.42) 100%
+  );
+  transform: rotate(12deg);
+  animation: ambient-rain-fall 1.5s linear infinite;
+}
+
+.ambient-lightning-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(226, 232, 240, 0.18), transparent 70%);
+  opacity: 0;
+  animation: ambient-storm-flash 11s ease-in-out infinite;
+}
+
+.ambient-snow-flake {
+  position: absolute;
+  top: -6%;
+  border-radius: 50%;
+  background: rgba(224, 242, 254, 0.42);
+  box-shadow: 0 0 6px rgba(224, 242, 254, 0.35);
+  animation: ambient-snow-fall 12s linear infinite;
+}
+
+.ambient-fog-band {
+  position: absolute;
+  left: -20%;
+  width: 140%;
+  height: 36%;
+  background: radial-gradient(
+    ellipse 60% 50% at 50% 50%,
+    rgba(148, 163, 184, 0.1),
+    transparent 70%
+  );
+  animation: ambient-fog-drift 22s ease-in-out infinite;
+}
+
+.ambient-fog-band-1 {
+  top: 4%;
+}
+
+.ambient-fog-band-2 {
+  top: 48%;
+  animation-delay: -9s;
+  animation-direction: reverse;
+}
+
+.ambient-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #e2e8f0;
+  opacity: 0.25;
+  animation: wi-twinkle 4.8s ease-in-out infinite;
+}
+
+@keyframes ambient-rain-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(12deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(-6vw, 110vh, 0) rotate(12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes ambient-snow-fall {
+  0% {
+    transform: translate3d(0, -5vh, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(24px, 52vh, 0);
+  }
+  88% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate3d(-18px, 108vh, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes ambient-fog-drift {
+  0%,
+  100% {
+    transform: translateX(-4%);
+  }
+  50% {
+    transform: translateX(4%);
+  }
+}
+
+@keyframes ambient-storm-flash {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+  94% {
+    opacity: 1;
+  }
+  95.5% {
+    opacity: 0.15;
+  }
+  97% {
+    opacity: 0.75;
+  }
+}
+
+/* =========================================================
+   2. DAYLIGHT ARC & UV BADGE
+   ========================================================= */
+
+.header-celestial {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-solar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 14px;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.header-solar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.solar-arc-svg {
+  display: block;
+  overflow: visible;
+}
+
+.header-solar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.header-solar-primary {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.header-solar-meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.header-moon {
+  padding: 0;
+}
+
+.header-moon-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+}
+
+.uv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.uv-badge-moderate {
+  background: rgba(250, 204, 21, 0.16);
+  color: #fde047;
+  border: 1px solid rgba(250, 204, 21, 0.32);
+}
+
+.uv-badge-high {
+  background: rgba(249, 115, 22, 0.18);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.36);
+}
+
+.uv-badge-very-high {
+  background: rgba(244, 63, 94, 0.18);
+  color: #fda4af;
+  border: 1px solid rgba(244, 63, 94, 0.38);
+}
+
+.uv-badge-extreme {
+  background: rgba(168, 85, 247, 0.22);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.42);
+}
+
+.lightning-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+  background: rgba(251, 191, 36, 0.2);
+  color: #fde047;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.board-viewport[data-theme='light'] .lightning-badge {
+  background: rgba(217, 119, 6, 0.14);
+  color: #92400e;
+  border-color: rgba(217, 119, 6, 0.34);
+}
+
+.tempest-config-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+}
+
+.tempest-help-text {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+@media (max-width: 1360px) {
+  .header-solar {
+    display: none;
+  }
+}
+
+/* =========================================================
+   3. CALENDAR GRID WEATHER BADGES
+   ========================================================= */
+
+.day-weather-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.day-weather-temp {
+  letter-spacing: -0.02em;
+}
+
+/* =========================================================
+   6A. CONNECTED MULTI-DAY EVENT RIBBONS
+   ========================================================= */
+
+.day-events {
+  overflow: visible;
+}
+
+.event-pill-span {
+  z-index: 1;
+}
+
+.event-pill-span-right {
+  margin-right: -8px;
+  padding-right: 8px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.event-pill-span-left {
+  margin-left: -8px;
+  padding-left: 8px;
+  border-left-width: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.event-pill-span-cont {
+  opacity: 0.88;
+}
+
+.event-pill-cont-label {
+  opacity: 0;
+  user-select: none;
+}
+
+/* =========================================================
+   6B. SEASONAL COLOR ACCENTS
+   ========================================================= */
+
+.board-viewport[data-season='winter'] {
+  --accent-amber: #7dd3fc;
+}
+
+.board-viewport[data-season='spring'] {
+  --accent-amber: #34d399;
+}
+
+.board-viewport[data-season='summer'] {
+  --accent-amber: #fbbf24;
+}
+
+.board-viewport[data-season='autumn'] {
+  --accent-amber: #f59e0b;
+}
+
+.board-viewport[data-season='winter'] .day-cell-today {
+  border-color: rgba(125, 211, 252, 0.55);
+  background:
+    radial-gradient(ellipse 95% 75% at 50% 0%, rgba(125, 211, 252, 0.16), transparent 70%),
+    rgba(56, 189, 248, 0.1);
+}
+
+.board-viewport[data-season='spring'] .day-cell-today {
+  border-color: rgba(52, 211, 153, 0.52);
+  background:
+    radial-gradient(ellipse 95% 75% at 50% 0%, rgba(52, 211, 153, 0.15), transparent 70%),
+    rgba(52, 211, 153, 0.09);
+}
+
+/* =========================================================
+   6C. WARM PAPER / DAYTIME LIGHT THEME
+   ========================================================= */
+
+.board-viewport[data-theme='light'] {
+  --bg-base: #f3efe6;
+  --bg-panel: rgba(255, 253, 248, 0.86);
+  --bg-panel-solid: #fffdf8;
+  --bg-cell: rgba(255, 255, 255, 0.72);
+  --bg-cell-next-month: rgba(14, 116, 144, 0.06);
+  --bg-cell-today: rgba(217, 119, 6, 0.11);
+  --border-subtle: rgba(15, 23, 42, 0.1);
+  --border-strong: rgba(15, 23, 42, 0.18);
+  --text-primary: #18202c;
+  --text-secondary: #3f4e63;
+  --text-muted: #64748b;
+  --accent-amber: #c26d0a;
+  --accent-sky: #0284c7;
+  --accent-emerald: #059669;
+  --accent-rose: #e11d48;
+  --sky-glow-1: rgba(245, 158, 11, 0.16);
+  --sky-glow-2: rgba(56, 189, 248, 0.14);
+  --sky-bg-top: #f7f3ea;
+  --sky-bg-bottom: #ebe5d8;
+}
+
+.board-viewport[data-theme='light'][data-sky='dawn'] {
+  --sky-glow-1: rgba(251, 113, 133, 0.22);
+  --sky-glow-2: rgba(251, 191, 36, 0.22);
+  --sky-bg-top: #fbf2ee;
+  --sky-bg-bottom: #f0e6dc;
+}
+
+.board-viewport[data-theme='light'][data-sky='midday'] {
+  --sky-glow-1: rgba(56, 189, 248, 0.16);
+  --sky-glow-2: rgba(251, 191, 36, 0.12);
+  --sky-bg-top: #f4f7f9;
+  --sky-bg-bottom: #ebe8df;
+}
+
+.board-viewport[data-theme='light'][data-sky='golden'] {
+  --sky-glow-1: rgba(249, 115, 22, 0.22);
+  --sky-glow-2: rgba(251, 191, 36, 0.2);
+  --sky-bg-top: #fbf1e6;
+  --sky-bg-bottom: #efe4d5;
+}
+
+.board-viewport[data-theme='light'][data-season='winter'] {
+  --accent-amber: #0284c7;
+}
+
+.board-viewport[data-theme='light'][data-season='spring'] {
+  --accent-amber: #059669;
+}
+
+.board-viewport[data-theme='light'][data-season='summer'] {
+  --accent-amber: #d97706;
+}
+
+.board-viewport[data-theme='light'][data-season='autumn'] {
+  --accent-amber: #c2410c;
+}
+
+.board-viewport[data-theme='light'] .clock-time {
+  color: #0f172a;
+}
+
+.board-viewport[data-theme='light'] .board-header,
+.board-viewport[data-theme='light'] .calendar-panel,
+.board-viewport[data-theme='light'] .agenda-panel,
+.board-viewport[data-theme='light'] .forecast-panel {
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+}
+
+.board-viewport[data-theme='light'] .weather-current-icon,
+.board-viewport[data-theme='light'] .header-solar-icon,
+.board-viewport[data-theme='light'] .hourly-slot,
+.board-viewport[data-theme='light'] .legend-pill,
+.board-viewport[data-theme='light'] .icon-btn,
+.board-viewport[data-theme='light'] .day-weather-badge {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.board-viewport[data-theme='light'] .header-moon-icon {
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(30, 41, 59, 0.85),
+    rgba(15, 23, 42, 0.96) 78%
+  );
+}
+
+.board-viewport[data-theme='light'] .icon-btn:hover {
+  background: rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+.board-viewport[data-theme='light'] .day-cell {
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.board-viewport[data-theme='light'] .day-cell-next-month {
+  border-color: rgba(2, 132, 199, 0.18);
+}
+
+.board-viewport[data-theme='light'] .day-cell-next-month .day-month-tag {
+  color: #0369a1;
+}
+
+.board-viewport[data-theme='light'] .day-num-today {
+  color: #ffffff;
+}
+
+.board-viewport[data-theme='light'] .event-pill {
+  background: rgba(15, 23, 42, 0.055);
+}
+
+.board-viewport[data-theme='light'] .agenda-item {
+  background: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.board-viewport[data-theme='light'] .agenda-item-live {
+  background: rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+.board-viewport[data-theme='light'] .live-dot {
+  background: rgba(217, 119, 6, 0.16);
+  color: #92400e;
+}
+
+.board-viewport[data-theme='light'] .demo-badge {
+  background: rgba(217, 119, 6, 0.12);
+  color: #92400e;
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+.board-viewport[data-theme='light'] .offline-badge {
+  background: rgba(225, 29, 72, 0.12);
+  color: #9f1239;
+  border-color: rgba(225, 29, 72, 0.3);
+}
+
+.board-viewport[data-theme='light'] .uv-badge-moderate {
+  background: rgba(234, 179, 8, 0.16);
+  color: #854d0e;
+}
+
+.board-viewport[data-theme='light'] .uv-badge-high {
+  background: rgba(234, 88, 12, 0.14);
+  color: #9a3412;
+}
+
+.board-viewport[data-theme='light'] .uv-badge-very-high {
+  background: rgba(225, 29, 72, 0.14);
+  color: #9f1239;
+}
+
+.board-viewport[data-theme='light'] .uv-badge-extreme {
+  background: rgba(147, 51, 234, 0.14);
+  color: #6b21a8;
+}
+
+.board-viewport[data-theme='light'] .forecast-bar-track {
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.board-viewport[data-theme='light'] .ambient-rain-drop {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(2, 132, 199, 0.22) 65%,
+    rgba(3, 105, 161, 0.35) 100%
+  );
+}
+
+.board-viewport[data-theme='light'] .ambient-snow-flake {
+  background: rgba(148, 163, 184, 0.45);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-rain-drop,
+  .ambient-lightning-flash,
+  .ambient-snow-flake,
+  .ambient-fog-band,
+  .ambient-star {
+    animation: none !important;
   }
 }

@@ -17,6 +17,7 @@ import type {
   AppConfig,
   CalendarFeedConfig,
   GeocodingResult,
+  TempestStationSummary,
 } from '../../../shared/types';
 
 interface SettingsPageProps {
@@ -52,6 +53,12 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
   const [cityQuery, setCityQuery] = useState('');
   const [cityResults, setCityResults] = useState<GeocodingResult[]>([]);
   const [searchingCity, setSearchingCity] = useState(false);
+
+  // Tempest station discovery & test
+  const [tempestStations, setTempestStations] = useState<TempestStationSummary[]>([]);
+  const [discoveringStations, setDiscoveringStations] = useState(false);
+  const [testingTempest, setTestingTempest] = useState(false);
+  const [tempestStatus, setTempestStatus] = useState<TestResult | null>(null);
 
   useEffect(() => {
     fetch('/api/config')
@@ -179,6 +186,113 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
     );
     setCityResults([]);
     setCityQuery('');
+  };
+
+  const handleDiscoverTempestStations = async () => {
+    const token = config.weather.tempestToken?.trim();
+    if (!token) {
+      setTempestStatus({ ok: false, message: 'Paste your Tempest Personal Access Token first.' });
+      return;
+    }
+    setDiscoveringStations(true);
+    setTempestStatus(null);
+    try {
+      const res = await fetch('/api/weather/tempest/stations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = (await res.json()) as {
+        stations?: TempestStationSummary[];
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+      const list = data.stations ?? [];
+      setTempestStations(list);
+      if (list.length === 0) {
+        setTempestStatus({ ok: false, message: 'No stations found on this Tempest account.' });
+      } else if (list.length === 1) {
+        selectTempestStation(list[0]);
+        setTempestStatus({
+          ok: true,
+          message: `Found station "${list[0].name}" (ID ${list[0].stationId})`,
+        });
+      }
+    } catch (err: unknown) {
+      setTempestStatus({
+        ok: false,
+        message: err instanceof Error ? err.message : 'Could not load Tempest stations.',
+      });
+    } finally {
+      setDiscoveringStations(false);
+    }
+  };
+
+  const selectTempestStation = (station: TempestStationSummary) => {
+    setConfig((prev) =>
+      prev
+        ? {
+            ...prev,
+            weather: {
+              ...prev.weather,
+              provider: 'tempest',
+              tempestStationId: station.stationId,
+              name: station.name,
+              latitude: station.latitude,
+              longitude: station.longitude,
+              timezone: station.timezone,
+            },
+          }
+        : prev
+    );
+    setTempestStations([]);
+  };
+
+  const handleTestTempest = async () => {
+    const token = config.weather.tempestToken?.trim();
+    const stationId = config.weather.tempestStationId;
+    if (!token || !stationId) {
+      setTempestStatus({ ok: false, message: 'Enter both your Tempest token and Station ID.' });
+      return;
+    }
+    setTestingTempest(true);
+    setTempestStatus(null);
+    try {
+      const res = await fetch('/api/weather/tempest/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          stationId,
+          unit: config.weather.unit,
+          name: config.weather.name,
+          timezone: config.weather.timezone,
+        }),
+      });
+      const data = (await res.json()) as {
+        ok: boolean;
+        locationName?: string;
+        temperature?: number;
+        condition?: string;
+        dailyCount?: number;
+        error?: string;
+      };
+      if (data.ok) {
+        const unitSym = config.weather.unit === 'celsius' ? '°C' : '°F';
+        setTempestStatus({
+          ok: true,
+          message: `Connected! ${data.locationName}: ${data.temperature}${unitSym} · ${data.condition} (${data.dailyCount}-day hyperlocal forecast)`,
+        });
+      } else {
+        setTempestStatus({ ok: false, message: data.error ?? 'Connection failed.' });
+      }
+    } catch {
+      setTempestStatus({ ok: false, message: 'Network error testing Tempest station.' });
+    } finally {
+      setTestingTempest(false);
+    }
   };
 
   const handleSave = async () => {
@@ -371,21 +485,29 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
           <div className="settings-card-header">
             <div className="settings-card-title">
               <CloudSun size={18} />
-              <h2>Weather Location</h2>
+              <h2>Weather & Station</h2>
             </div>
           </div>
 
           <div className="form-grid">
             <div className="form-field">
-              <label>Current Location</label>
-              <input
-                type="text"
+              <label>Weather Source</label>
+              <select
                 className="input"
-                value={config.weather.name}
+                value={config.weather.provider ?? 'open-meteo'}
                 onChange={(e) =>
-                  setConfig({ ...config, weather: { ...config.weather, name: e.target.value } })
+                  setConfig({
+                    ...config,
+                    weather: {
+                      ...config.weather,
+                      provider: e.target.value === 'tempest' ? 'tempest' : 'open-meteo',
+                    },
+                  })
                 }
-              />
+              >
+                <option value="open-meteo">Open-Meteo (Free, no API key)</option>
+                <option value="tempest">Tempest Weather Station (Live + Hyperlocal Forecast)</option>
+              </select>
             </div>
 
             <div className="form-field">
@@ -409,76 +531,184 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
             </div>
 
             <div className="form-field">
-              <label>Latitude / Longitude</label>
-              <div className="coord-row">
-                <input
-                  type="number"
-                  step="0.0001"
-                  className="input"
-                  value={config.weather.latitude}
-                  onChange={(e) =>
-                    setConfig({
-                      ...config,
-                      weather: { ...config.weather, latitude: Number(e.target.value) },
-                    })
-                  }
-                />
-                <input
-                  type="number"
-                  step="0.0001"
-                  className="input"
-                  value={config.weather.longitude}
-                  onChange={(e) =>
-                    setConfig({
-                      ...config,
-                      weather: { ...config.weather, longitude: Number(e.target.value) },
-                    })
-                  }
-                />
-              </div>
+              <label>Display Location Name</label>
+              <input
+                type="text"
+                className="input"
+                value={config.weather.name}
+                onChange={(e) =>
+                  setConfig({ ...config, weather: { ...config.weather, name: e.target.value } })
+                }
+              />
             </div>
 
-            <div className="form-field">
-              <label>Search Another City</label>
-              <div className="search-row">
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="e.g. Santa Fe, Albuquerque, Taos"
-                  value={cityQuery}
-                  onChange={(e) => setCityQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') void handleCitySearch();
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => void handleCitySearch()}
-                  disabled={searchingCity}
-                >
-                  <Search size={14} /> Search
-                </button>
-              </div>
-              {cityResults.length > 0 && (
-                <div className="city-results">
-                  {cityResults.map((city, i) => (
+            {config.weather.provider !== 'tempest' && (
+              <>
+                <div className="form-field">
+                  <label>Latitude / Longitude</label>
+                  <div className="coord-row">
+                    <input
+                      type="number"
+                      step="0.0001"
+                      className="input"
+                      value={config.weather.latitude}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          weather: { ...config.weather, latitude: Number(e.target.value) },
+                        })
+                      }
+                    />
+                    <input
+                      type="number"
+                      step="0.0001"
+                      className="input"
+                      value={config.weather.longitude}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          weather: { ...config.weather, longitude: Number(e.target.value) },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label>Search Another City</label>
+                  <div className="search-row">
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="e.g. Santa Fe, Albuquerque, Taos"
+                      value={cityQuery}
+                      onChange={(e) => setCityQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void handleCitySearch();
+                      }}
+                    />
                     <button
-                      key={`${city.latitude}-${city.longitude}-${i}`}
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => void handleCitySearch()}
+                      disabled={searchingCity}
+                    >
+                      <Search size={14} /> Search
+                    </button>
+                  </div>
+                  {cityResults.length > 0 && (
+                    <div className="city-results">
+                      {cityResults.map((city, i) => (
+                        <button
+                          key={`${city.latitude}-${city.longitude}-${i}`}
+                          type="button"
+                          className="city-result-btn"
+                          onClick={() => selectCity(city)}
+                        >
+                          <span>
+                            {[city.name, city.admin1, city.country].filter(Boolean).join(', ')}
+                          </span>
+                          <span className="city-tz">{city.timezone}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {config.weather.provider === 'tempest' && (
+            <div className="tempest-config-box">
+              <p className="tempest-help-text">
+                Create a free Personal Access Token at{' '}
+                <strong>tempestwx.com → Settings → Data Authorizations</strong>, paste it below,
+                and click <strong>Find My Stations</strong> to auto-fill your station details.
+              </p>
+
+              <div className="form-grid">
+                <div className="form-field">
+                  <label>Tempest Personal Access Token</label>
+                  <div className="search-row">
+                    <input
+                      type="password"
+                      className="input"
+                      placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      value={config.weather.tempestToken ?? ''}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          weather: { ...config.weather, tempestToken: e.target.value },
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => void handleDiscoverTempestStations()}
+                      disabled={discoveringStations}
+                    >
+                      {discoveringStations ? 'Finding…' : 'Find My Stations'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label>Tempest Station ID</label>
+                  <div className="search-row">
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="e.g. 123456"
+                      value={config.weather.tempestStationId ?? ''}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          weather: {
+                            ...config.weather,
+                            tempestStationId: e.target.value ? Number(e.target.value) : undefined,
+                          },
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => void handleTestTempest()}
+                      disabled={testingTempest}
+                    >
+                      {testingTempest ? 'Testing…' : 'Test Station'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {tempestStations.length > 0 && (
+                <div className="city-results">
+                  {tempestStations.map((st) => (
+                    <button
+                      key={st.stationId}
                       type="button"
                       className="city-result-btn"
-                      onClick={() => selectCity(city)}
+                      onClick={() => selectTempestStation(st)}
                     >
                       <span>
-                        {[city.name, city.admin1, city.country].filter(Boolean).join(', ')}
+                        {st.name} (ID {st.stationId})
                       </span>
-                      <span className="city-tz">{city.timezone}</span>
+                      <span className="city-tz">{st.timezone}</span>
                     </button>
                   ))}
                 </div>
               )}
+
+              {tempestStatus && (
+                <div className={`feed-test-result ${tempestStatus.ok ? 'test-ok' : 'test-err'}`}>
+                  {tempestStatus.ok ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                  <span>{tempestStatus.message}</span>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </section>
 
         {/* Display Preferences */}
@@ -491,6 +721,28 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
           </div>
 
           <div className="form-grid">
+            <div className="form-field">
+              <label>Board Theme</label>
+              <select
+                className="input"
+                value={config.display.theme ?? 'dark'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setConfig({
+                    ...config,
+                    display: {
+                      ...config.display,
+                      theme: val === 'light' || val === 'auto' ? val : 'dark',
+                    },
+                  });
+                }}
+              >
+                <option value="dark">Midnight Glass (Dark)</option>
+                <option value="light">Warm Paper (Daytime Light)</option>
+                <option value="auto">Auto (Light by day, Dark after dusk)</option>
+              </select>
+            </div>
+
             <div className="form-field">
               <label>Calendar Grid Mode</label>
               <select
@@ -684,6 +936,48 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                 }
               />
               <span>Subtle pixel shift for screen burn-in protection</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={config.display.ambientWeather ?? true}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    display: { ...config.display, ambientWeather: e.target.checked },
+                  })
+                }
+              />
+              <span>Living sky & ambient weather backdrop</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={config.display.calendarWeather ?? true}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    display: { ...config.display, calendarWeather: e.target.checked },
+                  })
+                }
+              />
+              <span>Show mini weather forecasts on calendar days</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={config.display.seasonalAccents ?? true}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    display: { ...config.display, seasonalAccents: e.target.checked },
+                  })
+                }
+              />
+              <span>Subtle seasonal color accents</span>
             </label>
 
             <label className="toggle-item">

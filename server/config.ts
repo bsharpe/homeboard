@@ -4,6 +4,7 @@ import type { AppConfig, CalendarFeedConfig } from '../shared/types.js';
 
 export const DEFAULT_CONFIG: AppConfig = {
   weather: {
+    provider: 'open-meteo',
     name: 'Santa Fe, NM',
     latitude: 35.687,
     longitude: -105.9378,
@@ -24,6 +25,10 @@ export const DEFAULT_CONFIG: AppConfig = {
     nightDimEndHour: 6,
     nightDimOpacity: 0.3,
     burnInShift: true,
+    theme: 'dark',
+    seasonalAccents: true,
+    ambientWeather: true,
+    calendarWeather: true,
   },
   refresh: {
     calendarMinutes: 10,
@@ -66,9 +71,20 @@ export function mergeWithDefaults(partial: Partial<AppConfig> | null | undefined
     ...DEFAULT_CONFIG.weather,
     ...(partial?.weather ?? {}),
   };
+  weather.provider = weather.provider === 'tempest' ? 'tempest' : 'open-meteo';
   weather.latitude = clamp(weather.latitude, -90, 90, DEFAULT_CONFIG.weather.latitude);
   weather.longitude = clamp(weather.longitude, -180, 180, DEFAULT_CONFIG.weather.longitude);
   weather.unit = weather.unit === 'celsius' ? 'celsius' : 'fahrenheit';
+  weather.tempestToken =
+    typeof weather.tempestToken === 'string' && weather.tempestToken.trim().length > 0
+      ? weather.tempestToken.trim()
+      : undefined;
+  weather.tempestStationId =
+    typeof weather.tempestStationId === 'number' &&
+    Number.isFinite(weather.tempestStationId) &&
+    weather.tempestStationId > 0
+      ? Math.round(weather.tempestStationId)
+      : undefined;
 
   const display = {
     ...DEFAULT_CONFIG.display,
@@ -81,6 +97,20 @@ export function mergeWithDefaults(partial: Partial<AppConfig> | null | undefined
   display.nightDimStartHour = clamp(display.nightDimStartHour, 0, 23, DEFAULT_CONFIG.display.nightDimStartHour);
   display.nightDimEndHour = clamp(display.nightDimEndHour, 0, 23, DEFAULT_CONFIG.display.nightDimEndHour);
   display.nightDimOpacity = clamp(display.nightDimOpacity, 0.15, 1, DEFAULT_CONFIG.display.nightDimOpacity);
+  display.theme =
+    display.theme === 'light' || display.theme === 'auto' ? display.theme : 'dark';
+  display.seasonalAccents =
+    typeof display.seasonalAccents === 'boolean'
+      ? display.seasonalAccents
+      : DEFAULT_CONFIG.display.seasonalAccents;
+  display.ambientWeather =
+    typeof display.ambientWeather === 'boolean'
+      ? display.ambientWeather
+      : DEFAULT_CONFIG.display.ambientWeather;
+  display.calendarWeather =
+    typeof display.calendarWeather === 'boolean'
+      ? display.calendarWeather
+      : DEFAULT_CONFIG.display.calendarWeather;
 
   const refresh = {
     ...DEFAULT_CONFIG.refresh,

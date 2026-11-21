@@ -179,11 +179,75 @@ export function mapEventsByDay(
   for (const list of map.values()) {
     list.sort((a, b) => {
       if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+      if (a.allDay && b.allDay) {
+        const aMulti = addDaysToKey(a.start.slice(0, 10), 1) < a.end.slice(0, 10);
+        const bMulti = addDaysToKey(b.start.slice(0, 10), 1) < b.end.slice(0, 10);
+        if (aMulti !== bMulti) return aMulti ? -1 : 1;
+        const startCmp = a.start.localeCompare(b.start);
+        if (startCmp !== 0) return startCmp;
+        const endCmp = b.end.localeCompare(a.end);
+        if (endCmp !== 0) return endCmp;
+        return a.id.localeCompare(b.id);
+      }
       return a.start.localeCompare(b.start);
     });
   }
 
   return map;
+}
+
+export interface MultiDaySpanInfo {
+  isMultiDay: boolean;
+  continuesLeft: boolean;
+  continuesRight: boolean;
+  connectsLeftInRow: boolean;
+  connectsRightInRow: boolean;
+  showLabel: boolean;
+}
+
+export function getMultiDaySpanInfo(
+  ev: CalendarEvent,
+  dateKey: string,
+  colIndex: number
+): MultiDaySpanInfo {
+  if (!ev.allDay) {
+    return {
+      isMultiDay: false,
+      continuesLeft: false,
+      continuesRight: false,
+      connectsLeftInRow: false,
+      connectsRightInRow: false,
+      showLabel: true,
+    };
+  }
+  const startKey = ev.start.slice(0, 10);
+  const endKey = ev.end.slice(0, 10);
+  const isMultiDay = addDaysToKey(startKey, 1) < endKey;
+  if (!isMultiDay) {
+    return {
+      isMultiDay: false,
+      continuesLeft: false,
+      continuesRight: false,
+      connectsLeftInRow: false,
+      connectsRightInRow: false,
+      showLabel: true,
+    };
+  }
+
+  const continuesLeft = dateKey > startKey;
+  const continuesRight = addDaysToKey(dateKey, 1) < endKey;
+  const connectsLeftInRow = continuesLeft && colIndex > 0;
+  const connectsRightInRow = continuesRight && colIndex < 6;
+  const showLabel = !continuesLeft || colIndex === 0;
+
+  return {
+    isMultiDay: true,
+    continuesLeft,
+    continuesRight,
+    connectsLeftInRow,
+    connectsRightInRow,
+    showLabel,
+  };
 }
 
 export function buildCalendarGrid(

@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardPayload } from '../../../shared/types';
 import { AgendaSidebar } from '../components/AgendaSidebar';
+import { AmbientWeatherOverlay } from '../components/AmbientWeatherOverlay';
 import { CalendarGrid } from '../components/CalendarGrid';
 import { HeaderBar } from '../components/HeaderBar';
+import {
+  getSeason,
+  getSkyPhase,
+  getWeatherMood,
+  resolveBoardTheme,
+} from '../utils/atmosphere';
 import { getHourInTimeZone, mapEventsByDay } from '../utils/date';
 
 interface BoardPageProps {
@@ -151,9 +158,29 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
     );
 
   const [dx, dy] = board.display.burnInShift ? SHIFT_OFFSETS[shiftIndex] : [0, 0];
+  const todayForecast = board.weather?.daily[0];
+  const skyPhase = board.display.ambientWeather
+    ? getSkyPhase(now, timezone, todayForecast?.sunrise, todayForecast?.sunset)
+    : 'night';
+  const weatherMood = board.display.ambientWeather
+    ? getWeatherMood(board.weather?.current.weatherCode)
+    : 'clear';
+  const season = board.display.seasonalAccents ? getSeason(now, timezone) : undefined;
+  const resolvedTheme = resolveBoardTheme(
+    board.display.theme ?? 'dark',
+    board.weather,
+    now,
+    timezone
+  );
 
   return (
-    <div className="board-viewport">
+    <div
+      className="board-viewport"
+      data-theme={resolvedTheme}
+      data-sky={board.display.ambientWeather ? skyPhase : 'static'}
+      data-weather-mood={weatherMood}
+      data-season={season}
+    >
       <div
         className={`board-shell ${cursorHidden ? 'cursor-hidden' : ''}`}
         style={{
@@ -161,6 +188,14 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
           transform: dx || dy ? `translate(${dx}px, ${dy}px)` : undefined,
         }}
       >
+        {board.display.ambientWeather && (
+          <AmbientWeatherOverlay
+            mood={weatherMood}
+            skyPhase={skyPhase}
+            theme={resolvedTheme}
+          />
+        )}
+
         <HeaderBar
           now={now}
           timezone={timezone}
@@ -180,6 +215,7 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
             display={board.display}
             eventsByDay={eventsByDay}
             calendarStatus={board.calendarStatus}
+            weather={board.weather}
           />
 
           <AgendaSidebar

@@ -5,7 +5,12 @@ import { fileURLToPath } from 'node:url';
 import type { AppConfig, BoardPayload, CalendarFeedConfig } from '../shared/types.js';
 import { loadConfig, saveConfig } from './config.js';
 import { CalendarService, fetchAndParseFeed } from './calendar.js';
-import { WeatherService, searchLocations } from './weather.js';
+import {
+  WeatherService,
+  discoverTempestStations,
+  fetchTempestBetterForecast,
+  searchLocations,
+} from './weather.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -137,6 +142,58 @@ app.get('/api/weather/search', async (req, res) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Search failed';
     res.status(502).json({ error: message });
+  }
+});
+
+app.post('/api/weather/tempest/stations', async (req, res) => {
+  const { token } = req.body as { token?: string };
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    res.status(400).json({ error: 'Tempest Personal Access Token is required' });
+    return;
+  }
+  try {
+    const stations = await discoverTempestStations(token);
+    res.json({ stations });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to load Tempest stations';
+    res.status(400).json({ error: message });
+  }
+});
+
+app.post('/api/weather/tempest/test', async (req, res) => {
+  const { token, stationId, unit, name, timezone } = req.body as {
+    token?: string;
+    stationId?: number;
+    unit?: 'fahrenheit' | 'celsius';
+    name?: string;
+    timezone?: string;
+  };
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    res.status(400).json({ ok: false, error: 'Tempest token is required' });
+    return;
+  }
+  const parsedId = Number(stationId);
+  if (!Number.isFinite(parsedId) || parsedId <= 0) {
+    res.status(400).json({ ok: false, error: 'Valid Tempest Station ID is required' });
+    return;
+  }
+  try {
+    const data = await fetchTempestBetterForecast(token, Math.round(parsedId), {
+      name: name?.trim() || '',
+      unit: unit === 'celsius' ? 'celsius' : 'fahrenheit',
+      timezone: timezone || currentConfig.weather.timezone,
+    });
+    res.json({
+      ok: true,
+      locationName: data.locationName,
+      temperature: data.current.temperature,
+      condition: data.current.condition,
+      dailyCount: data.daily.length,
+      hourlyCount: data.hourly.length,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Tempest connection failed';
+    res.status(400).json({ ok: false, error: message });
   }
 });
 

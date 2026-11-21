@@ -1,5 +1,7 @@
 export type CalendarGridMode = 'rolling-4w' | 'month';
 export type TemperatureUnit = 'fahrenheit' | 'celsius';
+export type BoardTheme = 'dark' | 'light' | 'auto';
+export type WeatherProvider = 'open-meteo' | 'tempest';
 
 export interface CalendarFeedConfig {
   id: string;
@@ -10,11 +12,14 @@ export interface CalendarFeedConfig {
 }
 
 export interface WeatherLocationConfig {
+  provider: WeatherProvider;
   name: string;
   latitude: number;
   longitude: number;
   timezone: string;
   unit: TemperatureUnit;
+  tempestToken?: string;
+  tempestStationId?: number;
 }
 
 export interface DisplayConfig {
@@ -31,6 +36,10 @@ export interface DisplayConfig {
   nightDimEndHour: number;   // 0-23
   nightDimOpacity: number;   // 0.15 - 1.0
   burnInShift: boolean;
+  theme: BoardTheme;
+  seasonalAccents: boolean;
+  ambientWeather: boolean;
+  calendarWeather: boolean;
 }
 
 export interface RefreshConfig {
@@ -74,10 +83,15 @@ export interface CurrentWeather {
   apparentTemperature: number;
   humidity: number;
   windSpeed: number;
+  windGust?: number;
   weatherCode: number;
   condition: string;
   isDay: boolean;
   uvIndex: number;
+  precipToday?: number;
+  pressureTrend?: string;
+  lightningCount?: number;
+  lightningLastDist?: number;
 }
 
 export interface HourlyForecastItem {
@@ -101,6 +115,7 @@ export interface DailyForecastItem {
 }
 
 export interface WeatherData {
+  source?: WeatherProvider;
   locationName: string;
   unit: TemperatureUnit;
   timezone: string;
@@ -127,6 +142,14 @@ export interface GeocodingResult {
   name: string;
   admin1?: string;
   country?: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+}
+
+export interface TempestStationSummary {
+  stationId: number;
+  name: string;
   latitude: number;
   longitude: number;
   timezone: string;

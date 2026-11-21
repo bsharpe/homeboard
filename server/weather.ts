@@ -2,6 +2,7 @@ import type {
   DailyForecastItem,
   GeocodingResult,
   HourlyForecastItem,
+  TempestStationSummary,
   WeatherData,
   WeatherLocationConfig,
 } from '../shared/types.js';
@@ -39,6 +40,201 @@ const WMO_DESCRIPTIONS: Record<number, string> = {
 
 export function describeWmoCode(code: number): string {
   return WMO_DESCRIPTIONS[code] ?? 'Unknown';
+}
+
+export function mapTempestIconToWmo(icon?: string): number {
+  if (!icon) return 0;
+  const normalized = icon.toLowerCase().trim();
+  if (normalized.includes('thunderstorm')) return 95;
+  if (normalized.includes('snow')) return 73;
+  if (normalized.includes('sleet')) return 66;
+  if (normalized.includes('possibly-rainy') || normalized.includes('chance-rain')) return 80;
+  if (normalized.includes('rain')) return 63;
+  if (normalized.includes('fog')) return 45;
+  if (normalized.includes('partly-cloudy')) return 2;
+  if (normalized.includes('cloudy')) return 3;
+  if (normalized.includes('windy')) return 2;
+  return 0; // clear-day, clear-night
+}
+
+export function epochToLocalIso(epochSec: number, timeZone: string): string {
+  const date = new Date(epochSec * 1000);
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+  const y = parts.find((p) => p.type === 'year')?.value ?? '1970';
+  const m = parts.find((p) => p.type === 'month')?.value ?? '01';
+  const d = parts.find((p) => p.type === 'day')?.value ?? '01';
+  const rawHour = parts.find((p) => p.type === 'hour')?.value ?? '00';
+  const hour = rawHour === '24' ? '00' : rawHour;
+  const min = parts.find((p) => p.type === 'minute')?.value ?? '00';
+  return `${y}-${m}-${d}T${hour}:${min}`;
+}
+
+export function epochToLocalDateKey(epochSec: number, timeZone: string): string {
+  return epochToLocalIso(epochSec, timeZone).slice(0, 10);
+}
+
+export interface TempestBetterForecastResponse {
+  status?: {
+    status_code: number;
+    status_message: string;
+  };
+  location_name?: string;
+  timezone?: string;
+  current_conditions?: {
+    time: number;
+    conditions?: string;
+    icon?: string;
+    air_temperature?: number;
+    feels_like?: number;
+    relative_humidity?: number;
+    wind_avg?: number;
+    wind_speed?: number;
+    wind_gust?: number;
+    uv?: number;
+    pressure_trend?: string;
+    precip_accum_local_day?: number;
+    lightning_strike_count_last_1hr?: number;
+    lightning_strike_last_distance?: number;
+  };
+  forecast?: {
+    hourly?: Array<{
+      time: number;
+      conditions?: string;
+      icon?: string;
+      air_temperature?: number;
+      precip_probability?: number;
+    }>;
+    daily?: Array<{
+      day_start_local: number;
+      conditions?: string;
+      icon?: string;
+      air_temp_high?: number;
+      air_temp_low?: number;
+      precip_probability?: number;
+      sunrise?: number;
+      sunset?: number;
+    }>;
+  };
+}
+
+export function parseTempestBetterForecast(
+  raw: TempestBetterForecastResponse,
+  location: Pick<WeatherLocationConfig, 'name' | 'unit' | 'timezone'>
+): WeatherData {
+  if (raw.status && raw.status.status_code !== 0) {
+    throw new Error(raw.status.status_message || `Tempest API error (${raw.status.status_code})`);
+  }
+  const cur = raw.current_conditions;
+  if (!cur) {
+    throw new Error('Incomplete weather payload from Tempest');
+  }
+
+  const timeZone = raw.timezone || location.timezone || 'America/Denver';
+  const rawDaily = raw.forecast?.daily ?? [];
+  const rawHourly = raw.forecast?.hourly ?? [];
+
+  const daily: DailyForecastItem[] = rawDaily.slice(0, 10).map((day) => {
+    const code = mapTempestIconToWmo(day.icon);
+    return {
+      date: epochToLocalDateKey(day.day_start_local, timeZone),
+      weatherCode: code,
+      condition: day.conditions || describeWmoCode(code),
+      tempMax: Math.round(day.air_temp_high ?? 0),
+      tempMin: Math.round(day.air_temp_low ?? 0),
+      precipitationProbability: Math.round(day.precip_probability ?? 0),
+      sunrise: day.sunrise ? epochToLocalIso(day.sunrise, timeZone) : '',
+      sunset: day.sunset ? epochToLocalIso(day.sunset, timeZone) : '',
+    };
+  });
+
+  const todayRaw = rawDaily[0];
+  const curIcon = cur.icon ?? '';
+  const isDay =
+    curIcon.endsWith('-night')
+      ? false
+      : curIcon.endsWith('-day')
+        ? true
+        : todayRaw?.sunrise && todayRaw?.sunset
+          ? cur.time >= todayRaw.sunrise && cur.time < todayRaw.sunset
+          : true;
+
+  const upcomingHourly = rawHourly.filter((slot) => slot.time > cur.time);
+  const hourlySource = upcomingHourly.length > 0 ? upcomingHourly : rawHourly;
+
+  const hourly: HourlyForecastItem[] = hourlySource.slice(0, 12).map((slot) => {
+    const code = mapTempestIconToWmo(slot.icon);
+    const slotIcon = slot.icon ?? '';
+    const slotIsDay = slotIcon.endsWith('-night')
+      ? false
+      : slotIcon.endsWith('-day')
+        ? true
+        : (() => {
+            const localHour = Number(epochToLocalIso(slot.time, timeZone).slice(11, 13));
+            return localHour >= 6 && localHour < 19;
+          })();
+    return {
+      time: epochToLocalIso(slot.time, timeZone),
+      temperature: Math.round(slot.air_temperature ?? 0),
+      weatherCode: code,
+      condition: slot.conditions || describeWmoCode(code),
+      precipitationProbability: Math.round(slot.precip_probability ?? 0),
+      isDay: slotIsDay,
+    };
+  });
+
+  const curCode = mapTempestIconToWmo(cur.icon);
+  const windSpeedVal = cur.wind_avg ?? cur.wind_speed ?? 0;
+  const windGustVal =
+    typeof cur.wind_gust === 'number' && Number.isFinite(cur.wind_gust)
+      ? Math.round(cur.wind_gust)
+      : undefined;
+  const precipVal =
+    typeof cur.precip_accum_local_day === 'number' && cur.precip_accum_local_day > 0
+      ? Math.round(cur.precip_accum_local_day * 100) / 100
+      : undefined;
+  const lightningCount =
+    typeof cur.lightning_strike_count_last_1hr === 'number' &&
+    cur.lightning_strike_count_last_1hr > 0
+      ? cur.lightning_strike_count_last_1hr
+      : undefined;
+  const lightningLastDist =
+    lightningCount && typeof cur.lightning_strike_last_distance === 'number'
+      ? Math.round(cur.lightning_strike_last_distance)
+      : undefined;
+
+  return {
+    source: 'tempest',
+    locationName: location.name || raw.location_name || 'Tempest Station',
+    unit: location.unit,
+    timezone: timeZone,
+    fetchedAt: new Date().toISOString(),
+    stale: false,
+    current: {
+      temperature: Math.round(cur.air_temperature ?? 0),
+      apparentTemperature: Math.round(cur.feels_like ?? cur.air_temperature ?? 0),
+      humidity: Math.round(cur.relative_humidity ?? 0),
+      windSpeed: Math.round(windSpeedVal),
+      windGust: windGustVal,
+      weatherCode: curCode,
+      condition: cur.conditions || describeWmoCode(curCode),
+      isDay,
+      uvIndex: Math.round((cur.uv ?? 0) * 10) / 10,
+      precipToday: precipVal,
+      pressureTrend: cur.pressure_trend,
+      lightningCount,
+      lightningLastDist,
+    },
+    hourly,
+    daily,
+  };
 }
 
 interface OpenMeteoResponse {
@@ -80,10 +276,38 @@ export class WeatherService {
   }
 
   async refresh(location: WeatherLocationConfig): Promise<WeatherData | null> {
-    const key = `${location.latitude.toFixed(4)},${location.longitude.toFixed(4)},${location.unit},${location.timezone}`;
+    const useTempest =
+      location.provider === 'tempest' &&
+      Boolean(location.tempestToken) &&
+      Boolean(location.tempestStationId);
+
+    const key = useTempest
+      ? `tempest:${location.tempestStationId}:${location.unit}:${location.timezone}`
+      : `open-meteo:${location.latitude.toFixed(4)},${location.longitude.toFixed(4)},${location.unit},${location.timezone}`;
+
     if (key !== this.lastKey) {
       this.cache = null;
       this.lastKey = key;
+    }
+
+    if (useTempest) {
+      try {
+        this.cache = await fetchTempestBetterForecast(
+          location.tempestToken!,
+          location.tempestStationId!,
+          location
+        );
+        this.lastError = undefined;
+        return this.cache;
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Tempest weather fetch failed';
+        this.lastError = message;
+        console.error('[weather:tempest] Refresh failed:', message);
+        if (this.cache) {
+          this.cache = { ...this.cache, stale: true };
+        }
+        return this.cache;
+      }
     }
 
     const params = new URLSearchParams({
@@ -171,6 +395,7 @@ export class WeatherService {
       });
 
       this.cache = {
+        source: 'open-meteo',
         locationName: location.name,
         unit: location.unit,
         timezone: location.timezone,
@@ -229,4 +454,84 @@ export async function searchLocations(query: string): Promise<GeocodingResult[]>
     longitude: item.longitude,
     timezone: item.timezone || 'America/Denver',
   }));
+}
+
+export async function fetchTempestBetterForecast(
+  token: string,
+  stationId: number,
+  location: Pick<WeatherLocationConfig, 'name' | 'unit' | 'timezone'>
+): Promise<WeatherData> {
+  const isMetric = location.unit === 'celsius';
+  const params = new URLSearchParams({
+    station_id: String(stationId),
+    token: token.trim(),
+    units_temp: isMetric ? 'c' : 'f',
+    units_wind: isMetric ? 'kph' : 'mph',
+    units_precip: isMetric ? 'mm' : 'in',
+    units_distance: isMetric ? 'km' : 'mi',
+    units_pressure: isMetric ? 'mb' : 'inhg',
+  });
+
+  const url = `https://swd.weatherflow.com/swd/rest/better_forecast?${params.toString()}`;
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(12_000),
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Tempest API returned HTTP ${response.status}`);
+  }
+
+  const raw = (await response.json()) as TempestBetterForecastResponse;
+  return parseTempestBetterForecast(raw, location);
+}
+
+interface TempestStationsResponse {
+  status?: {
+    status_code: number;
+    status_message: string;
+  };
+  stations?: Array<{
+    station_id: number;
+    name?: string;
+    public_name?: string;
+    latitude?: number;
+    longitude?: number;
+    timezone?: string;
+  }>;
+}
+
+export async function discoverTempestStations(token: string): Promise<TempestStationSummary[]> {
+  const trimmed = token.trim();
+  if (!trimmed) {
+    throw new Error('Tempest Personal Access Token is required');
+  }
+
+  const params = new URLSearchParams({ token: trimmed });
+  const response = await fetch(
+    `https://swd.weatherflow.com/swd/rest/stations?${params.toString()}`,
+    {
+      signal: AbortSignal.timeout(10_000),
+      headers: { Accept: 'application/json' },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Tempest stations request failed (HTTP ${response.status})`);
+  }
+
+  const data = (await response.json()) as TempestStationsResponse;
+  if (data.status && data.status.status_code !== 0) {
+    throw new Error(data.status.status_message || 'Failed to fetch Tempest stations');
+  }
+
+  return (data.stations ?? [])
+    .filter((s) => typeof s.station_id === 'number')
+    .map((s) => ({
+      stationId: s.station_id,
+      name: s.public_name || s.name || `Station ${s.station_id}`,
+      latitude: s.latitude ?? 35.687,
+      longitude: s.longitude ?? -105.9378,
+      timezone: s.timezone || 'America/Denver',
+    }));
 }
