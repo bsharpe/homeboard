@@ -111,4 +111,47 @@ describe('date grid & multi-day mapping', () => {
       showLabel: true,
     });
   });
+
+  it('shows the title on the first visible cell when earlier days fall off the calendar or overflow', () => {
+    const trip: CalendarEvent = {
+      id: 'trip-2',
+      title: 'Spring Break',
+      start: '2026-11-12',
+      end: '2026-11-18', // Started before Sunday Nov 15 grid start
+      allDay: true,
+      calendarId: 'fam',
+      calendarName: 'Family',
+      color: '#38bdf8',
+    };
+
+    // First cell of grid (col 0): event started earlier, still shows label
+    expect(getMultiDaySpanInfo(trip, '2026-11-15', 0, false, true)).toEqual({
+      isMultiDay: true,
+      continuesLeft: true,
+      continuesRight: true,
+      connectsLeftInRow: false,
+      connectsRightInRow: true,
+      showLabel: true,
+    });
+
+    // Mid-week cell (col 2) where prior day was hidden by overflow: shows label and does not connect left
+    expect(getMultiDaySpanInfo(trip, '2026-11-16', 2, false, true)).toEqual({
+      isMultiDay: true,
+      continuesLeft: true,
+      continuesRight: true,
+      connectsLeftInRow: false,
+      connectsRightInRow: true,
+      showLabel: true,
+    });
+
+    // Next day (col 3) after visible label cell: hides label and connects left
+    expect(getMultiDaySpanInfo(trip, '2026-11-17', 3, true, false)).toEqual({
+      isMultiDay: true,
+      continuesLeft: true,
+      continuesRight: false,
+      connectsLeftInRow: true,
+      connectsRightInRow: false,
+      showLabel: false,
+    });
+  });
 });

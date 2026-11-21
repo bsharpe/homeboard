@@ -2629,6 +2629,9 @@ body.board-mode::-webkit-scrollbar {
 
 .event-pill-span {
   z-index: 1;
+  border-left-width: 0;
+  border-top: 3px solid var(--accent-sky);
+  padding-top: 2px;
 }
 
 .event-pill-span-right {
@@ -2641,13 +2644,15 @@ body.board-mode::-webkit-scrollbar {
 .event-pill-span-left {
   margin-left: -8px;
   padding-left: 8px;
-  border-left-width: 0;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
 
 .event-pill-span-cont {
-  opacity: 0.88;
+  height: calc(4px + 0.625em);
+  padding-top: 0;
+  padding-bottom: 0;
+  flex-shrink: 0;
 }
 
 .event-pill-cont-label {

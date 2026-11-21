@@ -208,7 +208,9 @@ export interface MultiDaySpanInfo {
 export function getMultiDaySpanInfo(
   ev: CalendarEvent,
   dateKey: string,
-  colIndex: number
+  colIndex: number,
+  prevDayVisible = true,
+  nextDayVisible = true
 ): MultiDaySpanInfo {
   if (!ev.allDay) {
     return {
@@ -236,9 +238,9 @@ export function getMultiDaySpanInfo(
 
   const continuesLeft = dateKey > startKey;
   const continuesRight = addDaysToKey(dateKey, 1) < endKey;
-  const connectsLeftInRow = continuesLeft && colIndex > 0;
-  const connectsRightInRow = continuesRight && colIndex < 6;
-  const showLabel = !continuesLeft || colIndex === 0;
+  const connectsLeftInRow = continuesLeft && colIndex > 0 && prevDayVisible;
+  const connectsRightInRow = continuesRight && colIndex < 6 && nextDayVisible;
+  const showLabel = !continuesLeft || colIndex === 0 || !prevDayVisible;
 
   return {
     isMultiDay: true,

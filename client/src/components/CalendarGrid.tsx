@@ -55,6 +55,11 @@ export function CalendarGrid({
     }
   }
 
+  const visibleEventsPerDay = days.map((day) => day.events.slice(0, MAX_PILLS_PER_DAY));
+  const visibleEventIdsPerDay = visibleEventsPerDay.map(
+    (evs) => new Set(evs.map((ev) => ev.id))
+  );
+
   return (
     <section className="calendar-panel" aria-label="Family Calendar">
       <div className="panel-header calendar-panel-header">
@@ -95,7 +100,9 @@ export function CalendarGrid({
         {days.map((day, idx) => {
           const colIndex = idx % 7;
           const showMonthPrefix = day.dayNumber === 1 || idx === 0;
-          const visibleEvents = day.events.slice(0, MAX_PILLS_PER_DAY);
+          const visibleEvents = visibleEventsPerDay[idx];
+          const prevVisibleIds = idx > 0 ? visibleEventIdsPerDay[idx - 1] : null;
+          const nextVisibleIds = idx + 1 < days.length ? visibleEventIdsPerDay[idx + 1] : null;
           const overflowCount = day.events.length - visibleEvents.length;
           const holiday = getHolidayForDateKey(day.dateKey);
           const moon = getMoonPhaseForDateKey(day.dateKey);
@@ -167,7 +174,15 @@ export function CalendarGrid({
               <div className="day-events">
                 {visibleEvents.map((ev) => {
                   const delight = getEventDelight(ev.title);
-                  const span = getMultiDaySpanInfo(ev, day.dateKey, colIndex);
+                  const prevDayVisible = prevVisibleIds ? prevVisibleIds.has(ev.id) : false;
+                  const nextDayVisible = nextVisibleIds ? nextVisibleIds.has(ev.id) : false;
+                  const span = getMultiDaySpanInfo(
+                    ev,
+                    day.dateKey,
+                    colIndex,
+                    prevDayVisible,
+                    nextDayVisible
+                  );
                   return (
                     <div
                       key={`${day.dateKey}-${ev.id}`}
@@ -184,10 +199,15 @@ export function CalendarGrid({
                         .join(' ')}
                       style={
                         ev.allDay
-                          ? {
-                              backgroundColor: `${ev.color}2e`,
-                              borderLeftColor: span.continuesLeft ? 'transparent' : ev.color,
-                            }
+                          ? span.isMultiDay
+                            ? {
+                                backgroundColor: `${ev.color}2e`,
+                                borderTopColor: ev.color,
+                              }
+                            : {
+                                backgroundColor: `${ev.color}2e`,
+                                borderLeftColor: ev.color,
+                              }
                           : {
                               borderLeftColor: ev.color,
                             }
