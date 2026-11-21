@@ -1,6 +1,6 @@
 import { CloudRain, Droplets, RefreshCw, Settings, Sun, Wind, WifiOff, Zap } from 'lucide-react';
 import type { DisplayConfig, WeatherData } from '../../../shared/types';
-import { formatClock, formatFullDate, formatHourlyLabel } from '../utils/date';
+import { formatClock, formatHourlyLabel } from '../utils/date';
 import { getMoonPhaseForDate } from '../utils/moon';
 import { getSolarInfo, getUvBadgeInfo } from '../utils/solar';
 import { DaylightArc } from './DaylightArc';
@@ -31,7 +31,6 @@ export function HeaderBar({
   onOpenSettings,
 }: HeaderBarProps) {
   const { time, period } = formatClock(now, timezone, display.clockFormat, display.showSeconds);
-  const fullDate = formatFullDate(now, timezone);
   const tempUnit = weather?.unit === 'celsius' ? '°C' : '°';
   const windUnit = weather?.unit === 'celsius' ? 'km/h' : 'mph';
   const todayForecast = weather?.daily[0];
@@ -51,7 +50,6 @@ export function HeaderBar({
           <span className="clock-time">{time}</span>
           {period && <span className="clock-period">{period}</span>}
         </div>
-        <div className="clock-date">{fullDate}</div>
       </div>
 
       {weather ? (

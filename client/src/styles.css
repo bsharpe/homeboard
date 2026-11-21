@@ -132,37 +132,31 @@ body.board-mode::-webkit-scrollbar {
 
 .header-clock {
   display: flex;
-  flex-direction: column;
-  min-width: 220px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .clock-row {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  line-height: 1;
+  gap: 8px;
+  line-height: 0.92;
+  white-space: nowrap;
 }
 
 .clock-time {
-  font-size: clamp(2.1rem, 3.2vw, 3.4rem);
+  font-size: clamp(3.2rem, 4.6vw, 5.2rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
   color: #ffffff;
 }
 
 .clock-period {
-  font-size: clamp(0.95rem, 1.2vw, 1.3rem);
+  font-size: clamp(1.2rem, 1.65vw, 1.85rem);
   font-weight: 600;
   color: var(--accent-amber);
   text-transform: uppercase;
-}
-
-.clock-date {
-  margin-top: 4px;
-  font-size: clamp(0.92rem, 1.15vw, 1.2rem);
-  font-weight: 500;
-  color: var(--text-secondary);
 }
 
 /* Header Weather */
@@ -761,12 +755,121 @@ body.board-mode::-webkit-scrollbar {
   padding-left: 4px;
 }
 
-/* Sidebar Column (Agenda + 5-Day Forecast) */
+/* Sidebar Column (Agenda + Markets + 5-Day Forecast) */
 .sidebar-column {
   display: flex;
   flex-direction: column;
   gap: 14px;
   min-height: 0;
+}
+
+.market-panel {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(14px);
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.market-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border-subtle);
+}
+
+.market-tile-up {
+  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(52, 211, 153, 0.24);
+}
+
+.market-tile-down {
+  background: rgba(251, 113, 133, 0.08);
+  border-color: rgba(251, 113, 133, 0.24);
+}
+
+.market-tile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.market-symbol {
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.market-session {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.market-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.7);
+}
+
+.market-change-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.market-tile-up .market-change-row {
+  color: var(--accent-emerald);
+}
+
+.market-tile-down .market-change-row {
+  color: var(--accent-rose);
+}
+
+.board-viewport[data-theme='light'] .market-tile {
+  background: rgba(15, 23, 42, 0.035);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+.board-viewport[data-theme='light'] .market-tile-up {
+  background: rgba(5, 150, 105, 0.08);
+  border-color: rgba(5, 150, 105, 0.24);
+}
+
+.board-viewport[data-theme='light'] .market-tile-up .market-change-row {
+  color: #059669;
+}
+
+.board-viewport[data-theme='light'] .market-tile-down {
+  background: rgba(225, 29, 72, 0.08);
+  border-color: rgba(225, 29, 72, 0.24);
+}
+
+.board-viewport[data-theme='light'] .market-tile-down .market-change-row {
+  color: #e11d48;
 }
 
 .agenda-panel {
@@ -2656,6 +2759,7 @@ body.board-mode::-webkit-scrollbar {
 .board-viewport[data-theme='light'] .board-header,
 .board-viewport[data-theme='light'] .calendar-panel,
 .board-viewport[data-theme='light'] .agenda-panel,
+.board-viewport[data-theme='light'] .market-panel,
 .board-viewport[data-theme='light'] .forecast-panel {
   box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
 }

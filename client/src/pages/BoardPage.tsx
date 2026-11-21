@@ -224,6 +224,7 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
             display={board.display}
             eventsByDay={eventsByDay}
             weather={board.weather}
+            market={board.market}
           />
         </main>
       </div>

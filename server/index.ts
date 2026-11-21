@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import type { AppConfig, BoardPayload, CalendarFeedConfig } from '../shared/types.js';
 import { loadConfig, saveConfig } from './config.js';
 import { CalendarService, fetchAndParseFeed } from './calendar.js';
+import { MarketService } from './market.js';
 import {
   WeatherService,
   discoverTempestStations,
@@ -21,14 +22,19 @@ app.use(express.json({ limit: '1mb' }));
 
 const weatherService = new WeatherService();
 const calendarService = new CalendarService();
+const marketService = new MarketService();
 
 let currentConfig: AppConfig;
 let weatherTimer: NodeJS.Timeout | null = null;
 let calendarTimer: NodeJS.Timeout | null = null;
+let marketTimer: NodeJS.Timeout | null = null;
+
+const MARKET_REFRESH_MS = 5 * 60_000;
 
 function scheduleBackgroundSync(): void {
   if (weatherTimer) clearInterval(weatherTimer);
   if (calendarTimer) clearInterval(calendarTimer);
+  if (marketTimer) clearInterval(marketTimer);
 
   weatherTimer = setInterval(() => {
     void weatherService.refresh(currentConfig.weather);
@@ -37,6 +43,10 @@ function scheduleBackgroundSync(): void {
   calendarTimer = setInterval(() => {
     void calendarService.refreshAll(currentConfig.calendars);
   }, currentConfig.refresh.calendarMinutes * 60_000);
+
+  marketTimer = setInterval(() => {
+    void marketService.refresh();
+  }, MARKET_REFRESH_MS);
 }
 
 app.get('/api/health', (_req, res) => {
@@ -45,6 +55,7 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/board', (_req, res) => {
   const weatherSnap = weatherService.getSnapshot();
+  const marketSnap = marketService.getSnapshot();
   const calSnap = calendarService.getSnapshot(
     currentConfig.calendars,
     currentConfig.display.demoMode,
@@ -57,6 +68,7 @@ app.get('/api/board', (_req, res) => {
     display: currentConfig.display,
     weather: weatherSnap.data,
     weatherError: weatherSnap.error,
+    market: marketSnap.data,
     events: calSnap.events,
     calendarStatus: calSnap.status,
     usingDemoData: calSnap.usingDemoData,
@@ -99,6 +111,7 @@ app.post('/api/refresh', async (_req, res) => {
   await Promise.all([
     weatherService.refresh(currentConfig.weather),
     calendarService.refreshAll(currentConfig.calendars),
+    marketService.refresh(),
   ]);
   res.json({ ok: true, refreshedAt: new Date().toISOString() });
 });
@@ -229,6 +242,7 @@ async function start(): Promise<void> {
   void Promise.all([
     weatherService.refresh(currentConfig.weather),
     calendarService.refreshAll(currentConfig.calendars),
+    marketService.refresh(),
   ]);
 }
 

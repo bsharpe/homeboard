@@ -126,12 +126,30 @@ export interface WeatherData {
   daily: DailyForecastItem[];
 }
 
+export interface MarketQuote {
+  symbol: string;
+  price: number;
+  previousClose: number;
+  changePercent: number;
+  tradingDate: string; // YYYY-MM-DD (America/New_York)
+  isMarketOpen: boolean;
+}
+
+export interface MarketData {
+  fetchedAt: string;
+  stale: boolean;
+  isMarketOpen: boolean;
+  tradingDate: string;
+  quotes: MarketQuote[];
+}
+
 export interface BoardPayload {
   serverTime: string;
   timezone: string;
   display: DisplayConfig;
   weather: WeatherData | null;
   weatherError?: string;
+  market: MarketData | null;
   events: CalendarEvent[];
   calendarStatus: CalendarSyncStatus[];
   usingDemoData: boolean;

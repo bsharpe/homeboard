@@ -1,10 +1,11 @@
-import { Calendar, Droplets, MapPin } from 'lucide-react';
-import type { CalendarEvent, DisplayConfig, WeatherData } from '../../../shared/types';
+import { Calendar, Droplets, MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import type { CalendarEvent, DisplayConfig, MarketData, WeatherData } from '../../../shared/types';
 import {
   buildAgendaGroups,
   formatEventTimeRange,
   formatShortWeekday,
   getDateKeyInTimeZone,
+  parseDateKey,
 } from '../utils/date';
 import { WeatherIcon } from './WeatherIcon';
 import { getEventDelight } from '../utils/eventDelight';
@@ -16,6 +17,17 @@ interface AgendaSidebarProps {
   display: DisplayConfig;
   eventsByDay: Map<string, CalendarEvent[]>;
   weather: WeatherData | null;
+  market: MarketData | null;
+}
+
+function formatMarketSessionLabel(tradingDate: string, todayKey: string, isOpen: boolean): string {
+  if (isOpen) return 'Live';
+  if (tradingDate === todayKey) return 'Close';
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    weekday: 'short',
+  }).format(parseDateKey(tradingDate));
+  return `${weekday} close`;
 }
 
 export function AgendaSidebar({
@@ -24,6 +36,7 @@ export function AgendaSidebar({
   display,
   eventsByDay,
   weather,
+  market,
 }: AgendaSidebarProps) {
   const groups = buildAgendaGroups(now, timezone, display.agendaDays, eventsByDay);
   const todayKey = getDateKeyInTimeZone(now, timezone);
@@ -132,6 +145,50 @@ export function AgendaSidebar({
           )}
         </div>
       </section>
+
+      {market && market.quotes.length > 0 && (
+        <section className="market-panel" aria-label="Market Indices">
+          <div className="market-grid">
+            {market.quotes.map((quote) => {
+              const direction =
+                quote.changePercent > 0 ? 'up' : quote.changePercent < 0 ? 'down' : 'flat';
+              const sign = quote.changePercent > 0 ? '+' : '';
+              const pctText = `${sign}${quote.changePercent.toFixed(2)}%`;
+              const sessionLabel = formatMarketSessionLabel(
+                quote.tradingDate,
+                todayKey,
+                quote.isMarketOpen
+              );
+
+              return (
+                <div
+                  key={quote.symbol}
+                  className={`market-tile market-tile-${direction}`}
+                  title={`${quote.symbol}: $${quote.price.toFixed(2)} (prev close $${quote.previousClose.toFixed(2)}) · ${sessionLabel}`}
+                >
+                  <div className="market-tile-top">
+                    <span className="market-symbol">{quote.symbol}</span>
+                    <span className="market-session">
+                      {quote.isMarketOpen && <span className="market-live-dot" aria-hidden="true" />}
+                      {sessionLabel}
+                    </span>
+                  </div>
+                  <div className="market-change-row">
+                    {direction === 'up' ? (
+                      <TrendingUp size={16} />
+                    ) : direction === 'down' ? (
+                      <TrendingDown size={16} />
+                    ) : (
+                      <Minus size={16} />
+                    )}
+                    <span className="market-change">{pctText}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {forecastDays.length > 0 && (
         <section className="forecast-panel" aria-label="5-Day Weather Forecast">
