@@ -37,7 +37,7 @@ export function HeaderBar({
   const windUnit = weather?.unit === 'celsius' ? 'km/h' : 'mph';
   const todayForecast = weather?.daily[0];
   const tomorrowForecast = weather?.daily[1];
-  const hourlyPreview = weather?.hourly.slice(0, 4) ?? [];
+  const hourlyPreview = weather?.hourly.slice(0, 6) ?? [];
   const moon = getMoonPhaseForDate(now);
   const moonIlluminationPct = Math.round(moon.illumination * 100);
   const solar = getSolarInfo(now, timezone, todayForecast, tomorrowForecast, display.clockFormat);

@@ -157,7 +157,10 @@ export function ForecastRadarSlide({
       }).format(new Date(activeFrame.time * 1000))
     : null;
 
-  const basemapStyle = theme === 'light' ? 'rastertiles/voyager' : 'dark_all';
+  const esriBaseLayer =
+    theme === 'light' ? 'Canvas/World_Light_Gray_Base' : 'Canvas/World_Dark_Gray_Base';
+  const esriRefLayer =
+    theme === 'light' ? 'Canvas/World_Light_Gray_Reference' : 'Canvas/World_Dark_Gray_Reference';
 
   return (
     <section className="forecast-radar-slide" aria-label="5-Day Forecast and Live Radar">
@@ -248,8 +251,8 @@ export function ForecastRadarSlide({
             }}
           >
             {tileGrid.tiles.map((tile) => {
-              const sub = ['a', 'b', 'c'][(tile.tx + tile.ty) % 3];
-              const baseUrl = `https://${sub}.basemaps.cartocdn.com/${basemapStyle}/${RADAR_ZOOM}/${tile.tx}/${tile.ty}.png`;
+              const baseUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/${esriBaseLayer}/MapServer/tile/${RADAR_ZOOM}/${tile.ty}/${tile.tx}`;
+              const refUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/${esriRefLayer}/MapServer/tile/${RADAR_ZOOM}/${tile.ty}/${tile.tx}`;
               const radarUrl = activeFrame
                 ? `${radarHost}${activeFrame.path}/256/${RADAR_ZOOM}/${tile.tx}/${tile.ty}/2/1_1.png`
                 : null;
@@ -269,6 +272,7 @@ export function ForecastRadarSlide({
                   {radarUrl && (
                     <img src={radarUrl} alt="" className="radar-overlay-tile" draggable={false} />
                   )}
+                  <img src={refUrl} alt="" className="radar-base-tile" draggable={false} />
                 </div>
               );
             })}
