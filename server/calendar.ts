@@ -124,6 +124,7 @@ export function parseIcsText(
           description: extractText(activeEv.description) ?? description,
           calendarId: feed.id,
           calendarName: feed.name,
+          calendarAbbrev: feed.abbreviation,
           color: feed.color,
         });
       }
@@ -143,6 +144,7 @@ export function parseIcsText(
         description,
         calendarId: feed.id,
         calendarName: feed.name,
+        calendarAbbrev: feed.abbreviation,
         color: feed.color,
       });
     }
@@ -354,6 +356,7 @@ export class CalendarService {
           this.statusByFeed.set(feed.id, {
             id: feed.id,
             name: feed.name,
+            abbreviation: feed.abbreviation,
             color: feed.color,
             enabled: false,
             ok: true,
@@ -369,6 +372,7 @@ export class CalendarService {
           this.statusByFeed.set(feed.id, {
             id: feed.id,
             name: feed.name,
+            abbreviation: feed.abbreviation,
             color: feed.color,
             enabled: true,
             ok: true,
@@ -383,6 +387,7 @@ export class CalendarService {
           this.statusByFeed.set(feed.id, {
             id: feed.id,
             name: feed.name,
+            abbreviation: feed.abbreviation,
             color: feed.color,
             enabled: true,
             ok: false,
@@ -429,6 +434,7 @@ export class CalendarService {
         this.statusByFeed.get(feed.id) ?? {
           id: feed.id,
           name: feed.name,
+          abbreviation: feed.abbreviation,
           color: feed.color,
           enabled: feed.enabled,
           ok: true,

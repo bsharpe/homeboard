@@ -768,6 +768,40 @@ body.board-mode::-webkit-scrollbar {
   color: var(--text-primary);
 }
 
+.event-cal-badge,
+.legend-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+
+.event-cal-badge {
+  width: 16px;
+  height: 16px;
+  font-size: 0.64rem;
+}
+
+.legend-badge {
+  width: 17px;
+  height: 17px;
+  font-size: 0.66rem;
+}
+
+.feed-abbrev-input {
+  width: 52px;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding-left: 6px;
+  padding-right: 6px;
+  flex-shrink: 0;
+}
+
 .event-overflow {
   font-size: 0.72rem;
   font-weight: 600;

@@ -25,6 +25,7 @@ export interface CalendarFeedConfig {
   name: string;
   url: string;
   color: string;
+  abbreviation?: string;
   enabled: boolean;
 }
 
@@ -102,12 +103,14 @@ export interface CalendarEvent {
   description?: string;
   calendarId: string;
   calendarName: string;
+  calendarAbbrev?: string;
   color: string;
 }
 
 export interface CalendarSyncStatus {
   id: string;
   name: string;
+  abbreviation?: string;
   color: string;
   enabled: boolean;
   ok: boolean;

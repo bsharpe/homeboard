@@ -8,7 +8,6 @@ import type {
 import {
   buildCalendarGrid,
   formatEventTime,
-  getMultiDaySpanInfo,
   getWeekdayHeaders,
 } from '../utils/date';
 import { dayHasCelebration, getEventDelight } from '../utils/eventDelight';
@@ -29,6 +28,22 @@ interface CalendarGridProps {
 }
 
 const MAX_PILLS_PER_DAY = 4;
+
+function getContrastTextColor(hex: string): string {
+  const cleaned = hex.replace('#', '');
+  if (cleaned.length !== 6) return '#090d16';
+  const r = parseInt(cleaned.slice(0, 2), 16) / 255;
+  const g = parseInt(cleaned.slice(2, 4), 16) / 255;
+  const b = parseInt(cleaned.slice(4, 6), 16) / 255;
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.52 ? '#090d16' : '#ffffff';
+}
+
+function getCalendarAbbrev(name: string, custom?: string): string {
+  if (custom && custom.trim()) return custom.trim().slice(0, 2).toUpperCase();
+  const trimmed = name.trim();
+  return trimmed ? trimmed[0].toUpperCase() : '•';
+}
 
 export function CalendarGrid({
   now,
@@ -55,10 +70,10 @@ export function CalendarGrid({
     }
   }
 
-  const visibleEventsPerDay = days.map((day) => day.events.slice(0, MAX_PILLS_PER_DAY));
-  const visibleEventIdsPerDay = visibleEventsPerDay.map(
-    (evs) => new Set(evs.map((ev) => ev.id))
-  );
+  const abbrevByCalendarId = new Map<string, string>();
+  for (const cal of calendarStatus) {
+    abbrevByCalendarId.set(cal.id, getCalendarAbbrev(cal.name, cal.abbreviation));
+  }
 
   return (
     <section className="calendar-panel" aria-label="Family Calendar">
@@ -67,16 +82,27 @@ export function CalendarGrid({
           <h2 className="panel-title">{monthHeading}</h2>
           {activeCalendars.length > 0 && (
             <div className="calendar-legend">
-              {activeCalendars.map((cal) => (
-                <div
-                  key={cal.id}
-                  className={`legend-pill ${!cal.ok ? 'legend-pill-error' : ''}`}
-                  title={cal.error ? `Sync error: ${cal.error}` : `${cal.eventCount} events`}
-                >
-                  <span className="legend-dot" style={{ backgroundColor: cal.color }} />
-                  <span className="legend-name">{cal.name}</span>
-                </div>
-              ))}
+              {activeCalendars.map((cal) => {
+                const abbrev = getCalendarAbbrev(cal.name, cal.abbreviation);
+                return (
+                  <div
+                    key={cal.id}
+                    className={`legend-pill ${!cal.ok ? 'legend-pill-error' : ''}`}
+                    title={cal.error ? `Sync error: ${cal.error}` : `${cal.eventCount} events`}
+                  >
+                    <span
+                      className="legend-badge"
+                      style={{
+                        backgroundColor: cal.color,
+                        color: getContrastTextColor(cal.color),
+                      }}
+                    >
+                      {abbrev}
+                    </span>
+                    <span className="legend-name">{cal.name}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -98,11 +124,8 @@ export function CalendarGrid({
         style={{ gridTemplateRows: `repeat(${weekCount}, minmax(0, 1fr))` }}
       >
         {days.map((day, idx) => {
-          const colIndex = idx % 7;
           const showMonthPrefix = day.dayNumber === 1 || idx === 0;
-          const visibleEvents = visibleEventsPerDay[idx];
-          const prevVisibleIds = idx > 0 ? visibleEventIdsPerDay[idx - 1] : null;
-          const nextVisibleIds = idx + 1 < days.length ? visibleEventIdsPerDay[idx + 1] : null;
+          const visibleEvents = day.events.slice(0, MAX_PILLS_PER_DAY);
           const overflowCount = day.events.length - visibleEvents.length;
           const holiday = getHolidayForDateKey(day.dateKey);
           const moon = getMoonPhaseForDateKey(day.dateKey);
@@ -174,15 +197,10 @@ export function CalendarGrid({
               <div className="day-events">
                 {visibleEvents.map((ev) => {
                   const delight = getEventDelight(ev.title);
-                  const prevDayVisible = prevVisibleIds ? prevVisibleIds.has(ev.id) : false;
-                  const nextDayVisible = nextVisibleIds ? nextVisibleIds.has(ev.id) : false;
-                  const span = getMultiDaySpanInfo(
-                    ev,
-                    day.dateKey,
-                    colIndex,
-                    prevDayVisible,
-                    nextDayVisible
-                  );
+                  const abbrev =
+                    ev.calendarAbbrev?.trim() ||
+                    abbrevByCalendarId.get(ev.calendarId) ||
+                    getCalendarAbbrev(ev.calendarName);
                   return (
                     <div
                       key={`${day.dateKey}-${ev.id}`}
@@ -190,45 +208,38 @@ export function CalendarGrid({
                         'event-pill',
                         ev.allDay ? 'event-pill-allday' : '',
                         delight?.isCelebration ? 'event-pill-celebration' : '',
-                        span.isMultiDay ? 'event-pill-span' : '',
-                        span.connectsLeftInRow ? 'event-pill-span-left' : '',
-                        span.connectsRightInRow ? 'event-pill-span-right' : '',
-                        span.isMultiDay && !span.showLabel ? 'event-pill-span-cont' : '',
                       ]
                         .filter(Boolean)
                         .join(' ')}
                       style={
                         ev.allDay
-                          ? span.isMultiDay
-                            ? {
-                                backgroundColor: `${ev.color}2e`,
-                                borderTopColor: ev.color,
-                              }
-                            : {
-                                backgroundColor: `${ev.color}2e`,
-                                borderLeftColor: ev.color,
-                              }
+                          ? {
+                              backgroundColor: `${ev.color}24`,
+                              borderLeftColor: ev.color,
+                            }
                           : {
                               borderLeftColor: ev.color,
                             }
                       }
-                      title={ev.title}
+                      title={`${ev.calendarName}: ${ev.title}`}
                     >
-                      {span.showLabel ? (
-                        <>
-                          {delight && <EventDelightIcon kind={delight.kind} size={11} />}
-                          {!ev.allDay && (
-                            <span className="event-pill-time">
-                              {formatEventTime(ev.start, timezone, display.clockFormat)}
-                            </span>
-                          )}
-                          <span className="event-pill-title">{ev.title}</span>
-                        </>
-                      ) : (
-                        <span className="event-pill-title event-pill-cont-label" aria-hidden="true">
-                          {ev.title}
+                      <span
+                        className="event-cal-badge"
+                        style={{
+                          backgroundColor: ev.color,
+                          color: getContrastTextColor(ev.color),
+                        }}
+                        aria-label={ev.calendarName}
+                      >
+                        {abbrev}
+                      </span>
+                      {delight && <EventDelightIcon kind={delight.kind} size={11} />}
+                      {!ev.allDay && (
+                        <span className="event-pill-time">
+                          {formatEventTime(ev.start, timezone, display.clockFormat)}
                         </span>
                       )}
+                      <span className="event-pill-title">{ev.title}</span>
                     </div>
                   );
                 })}

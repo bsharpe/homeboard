@@ -640,6 +640,19 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                         value={cal.name}
                         onChange={(e) => updateCalendar(cal.id, { name: e.target.value })}
                       />
+                      <input
+                        type="text"
+                        className="input feed-abbrev-input"
+                        maxLength={2}
+                        placeholder={cal.name.trim() ? cal.name.trim()[0].toUpperCase() : 'A'}
+                        title="1-letter (or digit) badge shown on calendar events (e.g. G, 5, A, 6, F)"
+                        value={cal.abbreviation ?? ''}
+                        onChange={(e) =>
+                          updateCalendar(cal.id, {
+                            abbreviation: e.target.value.toUpperCase().slice(0, 2),
+                          })
+                        }
+                      />
                       <div className="swatch-row">
                         {COLOR_SWATCHES.map((hex) => (
                           <button

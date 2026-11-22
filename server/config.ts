@@ -102,6 +102,10 @@ function sanitizeCalendars(raw: unknown): CalendarFeedConfig[] {
       name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : `Calendar ${index + 1}`,
       url: typeof item.url === 'string' ? item.url.trim() : '',
       color: typeof item.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(item.color) ? item.color : '#38bdf8',
+      abbreviation:
+        typeof item.abbreviation === 'string' && item.abbreviation.trim().length > 0
+          ? item.abbreviation.trim().slice(0, 2).toUpperCase()
+          : undefined,
       enabled: typeof item.enabled === 'boolean' ? item.enabled : true,
     }))
     .filter((cal) => cal.url.length > 0);
