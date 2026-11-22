@@ -1,5 +1,5 @@
-import { CloudRain, Droplets, RefreshCw, Settings, Sun, Wind, WifiOff, Zap } from 'lucide-react';
-import type { DisplayConfig, WeatherData } from '../../../shared/types';
+import { CloudRain, Droplets, Leaf, RefreshCw, Settings, Sun, Wind, WifiOff, Zap } from 'lucide-react';
+import type { AirQualityData, DisplayConfig, WeatherData } from '../../../shared/types';
 import { formatClock, formatHourlyLabel } from '../utils/date';
 import { getMoonPhaseForDate } from '../utils/moon';
 import { getSolarInfo, getUvBadgeInfo } from '../utils/solar';
@@ -12,6 +12,7 @@ interface HeaderBarProps {
   timezone: string;
   display: DisplayConfig;
   weather: WeatherData | null;
+  airQuality?: AirQualityData | null;
   usingDemoData: boolean;
   offline: boolean;
   refreshing: boolean;
@@ -24,6 +25,7 @@ export function HeaderBar({
   timezone,
   display,
   weather,
+  airQuality,
   usingDemoData,
   offline,
   refreshing,
@@ -133,6 +135,16 @@ export function HeaderBar({
                     title={`UV Index ${weather.current.uvIndex} (${uvBadge.label})`}
                   >
                     <Sun size={11} /> UV {uvBadge.value} {uvBadge.label}
+                  </span>
+                )}
+                {airQuality && (
+                  <span
+                    className={`aqi-badge aqi-badge-${airQuality.category.toLowerCase().replace(/\s+/g, '-')}`}
+                    title={`US AQI ${airQuality.usAqi} (${airQuality.category})${
+                      airQuality.pm25 !== undefined ? ` · PM2.5 ${airQuality.pm25} µg/m³` : ''
+                    }`}
+                  >
+                    <Leaf size={11} /> AQI {airQuality.usAqi} {airQuality.category}
                   </span>
                 )}
               </div>

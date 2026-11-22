@@ -1,0 +1,15 @@
+name = "homeboard-cloud-api"
+main = "src/index.ts"
+compatibility_date = "2025-02-14"
+
+# Optional KV namespace for edge caching across Worker isolates.
+# Create with: npx wrangler kv namespace create CACHE
+# Then uncomment and paste your namespace ID:
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Optional secrets (set via `npx wrangler secret put <NAME>`):
+#   API_KEY            - Single Bearer token (or comma-separated tokens for multiple families)
+#   TEMPEST_TOKEN      - Optional default Tempest PAT if you don't want to store it on your Pi
+#   TEMPEST_STATION_ID - Optional default Tempest Station ID

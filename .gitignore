@@ -1,5 +1,7 @@
 node_modules/
 dist/
 data/config.json
+data/cloud-cache.json
+.wrangler/
 .DS_Store
 *.log

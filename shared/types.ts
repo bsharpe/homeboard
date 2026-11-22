@@ -2,6 +2,23 @@ export type CalendarGridMode = 'rolling-4w' | 'month';
 export type TemperatureUnit = 'fahrenheit' | 'celsius';
 export type BoardTheme = 'dark' | 'light' | 'auto';
 export type WeatherProvider = 'open-meteo' | 'tempest';
+export type BoardSlideId = 'calendar' | 'stocks' | 'world-clock' | 'forecast-radar';
+export type CloudModuleId = 'weather' | 'alerts' | 'aqi' | 'market';
+
+export interface WorldClockCity {
+  id: string;
+  name: string;
+  timezone: string;
+  subtitle?: string;
+}
+export type WeatherAlertSeverity = 'Extreme' | 'Severe' | 'Moderate' | 'Minor' | 'Unknown';
+export type AirQualityCategory =
+  | 'Good'
+  | 'Moderate'
+  | 'Sensitive'
+  | 'Unhealthy'
+  | 'Very Unhealthy'
+  | 'Hazardous';
 
 export interface CalendarFeedConfig {
   id: string;
@@ -40,6 +57,10 @@ export interface DisplayConfig {
   seasonalAccents: boolean;
   ambientWeather: boolean;
   calendarWeather: boolean;
+  rotationEnabled?: boolean;
+  rotationIntervalSeconds?: number;
+  rotationSlides?: BoardSlideId[];
+  worldClockCities?: WorldClockCity[];
 }
 
 export interface RefreshConfig {
@@ -47,11 +68,28 @@ export interface RefreshConfig {
   weatherMinutes: number;
 }
 
+export interface CloudModulesConfig {
+  weather: boolean;
+  alerts: boolean;
+  aqi: boolean;
+  market: boolean;
+  marketSymbols: string[];
+}
+
+export interface CloudConfig {
+  enabled: boolean;
+  endpointUrl: string;
+  apiKey?: string;
+  pollSeconds: number;
+  modules: CloudModulesConfig;
+}
+
 export interface AppConfig {
   weather: WeatherLocationConfig;
   display: DisplayConfig;
   refresh: RefreshConfig;
   calendars: CalendarFeedConfig[];
+  cloud?: CloudConfig;
 }
 
 export interface CalendarEvent {
@@ -143,17 +181,72 @@ export interface MarketData {
   quotes: MarketQuote[];
 }
 
+export interface WeatherAlert {
+  id: string;
+  event: string;
+  headline: string;
+  severity: WeatherAlertSeverity;
+  urgency?: string;
+  startsAt?: string;
+  expiresAt?: string;
+  areaDesc?: string;
+}
+
+export interface AirQualityData {
+  usAqi: number;
+  category: AirQualityCategory;
+  pm25?: number;
+  pm10?: number;
+  ozone?: number;
+  fetchedAt: string;
+}
+
+export interface CloudSnapshotRequest {
+  include: CloudModuleId[];
+  location: {
+    name: string;
+    lat: number;
+    lon: number;
+    timezone: string;
+    unit: TemperatureUnit;
+    tempestStationId?: number;
+  };
+  market?: {
+    symbols: string[];
+  };
+  force?: boolean;
+}
+
+export interface CloudSnapshotResponse {
+  schemaVersion: 1;
+  generatedAt: string;
+  weather?: WeatherData;
+  alerts?: WeatherAlert[];
+  aqi?: AirQualityData | null;
+  market?: MarketData;
+  errors?: Partial<Record<CloudModuleId, string>>;
+}
+
 export interface BoardPayload {
   serverTime: string;
   timezone: string;
+  location?: {
+    name: string;
+    latitude: number;
+    longitude: number;
+  };
   display: DisplayConfig;
   weather: WeatherData | null;
   weatherError?: string;
+  weatherAlerts?: WeatherAlert[];
+  airQuality?: AirQualityData | null;
   market: MarketData | null;
   events: CalendarEvent[];
   calendarStatus: CalendarSyncStatus[];
   usingDemoData: boolean;
   lastCalendarSyncAt: string | null;
+  cloudEnabled?: boolean;
+  cloudError?: string;
 }
 
 export interface GeocodingResult {

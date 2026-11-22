@@ -3,7 +3,9 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  Cloud,
   CloudSun,
+  Globe,
   HelpCircle,
   Monitor,
   Plus,
@@ -15,10 +17,62 @@ import {
 } from 'lucide-react';
 import type {
   AppConfig,
+  BoardSlideId,
   CalendarFeedConfig,
+  CloudConfig,
   GeocodingResult,
   TempestStationSummary,
+  WorldClockCity,
 } from '../../../shared/types';
+
+const DEFAULT_ROTATION_SLIDES_UI: BoardSlideId[] = [
+  'calendar',
+  'stocks',
+  'world-clock',
+  'forecast-radar',
+];
+
+const DEFAULT_WORLD_CLOCK_CITIES_UI: WorldClockCity[] = [
+  { id: 'santa-fe', name: 'Santa Fe', timezone: 'America/Denver', subtitle: 'New Mexico' },
+  { id: 'memphis', name: 'Memphis', timezone: 'America/Chicago', subtitle: 'Tennessee' },
+  { id: 'miami', name: 'Miami', timezone: 'America/New_York', subtitle: 'Florida' },
+];
+
+const SLIDE_OPTIONS: Array<{ id: BoardSlideId; label: string }> = [
+  { id: 'calendar', label: 'Calendar + Upcoming Agenda' },
+  { id: 'stocks', label: 'Stocks / Market Indices' },
+  { id: 'world-clock', label: 'World Clock' },
+  { id: 'forecast-radar', label: '5-Day Forecast + Live Radar' },
+];
+
+const COMMON_TIMEZONES = [
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Asia/Tokyo',
+  'Asia/Singapore',
+  'Australia/Sydney',
+];
+
+const DEFAULT_CLOUD_UI: CloudConfig = {
+  enabled: false,
+  endpointUrl: '',
+  pollSeconds: 120,
+  modules: {
+    weather: true,
+    alerts: true,
+    aqi: true,
+    market: true,
+    marketSymbols: ['SPY', 'QQQ'],
+  },
+};
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -60,10 +114,18 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
   const [testingTempest, setTestingTempest] = useState(false);
   const [tempestStatus, setTempestStatus] = useState<TestResult | null>(null);
 
+  // Cloud Data Hub test & symbol input
+  const [testingCloud, setTestingCloud] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState<TestResult | null>(null);
+  const [symbolsInput, setSymbolsInput] = useState('SPY, QQQ');
+
   useEffect(() => {
     fetch('/api/config')
       .then((res) => res.json())
-      .then((data: AppConfig) => setConfig(data))
+      .then((data: AppConfig) => {
+        setConfig(data);
+        setSymbolsInput((data.cloud?.modules?.marketSymbols ?? ['SPY', 'QQQ']).join(', '));
+      })
       .catch(() => setErrorMessage('Could not load settings from server.'));
   }, []);
 
@@ -293,6 +355,164 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
     } finally {
       setTestingTempest(false);
     }
+  };
+
+  const cloudConfig: CloudConfig = config.cloud ?? DEFAULT_CLOUD_UI;
+
+  const updateCloud = (patch: Partial<CloudConfig>) => {
+    setConfig((prev) =>
+      prev
+        ? {
+            ...prev,
+            cloud: {
+              ...(prev.cloud ?? DEFAULT_CLOUD_UI),
+              ...patch,
+            },
+          }
+        : prev
+    );
+  };
+
+  const updateCloudModules = (patch: Partial<CloudConfig['modules']>) => {
+    setConfig((prev) =>
+      prev
+        ? {
+            ...prev,
+            cloud: {
+              ...(prev.cloud ?? DEFAULT_CLOUD_UI),
+              modules: {
+                ...(prev.cloud?.modules ?? DEFAULT_CLOUD_UI.modules),
+                ...patch,
+              },
+            },
+          }
+        : prev
+    );
+  };
+
+  const handleTestCloud = async () => {
+    if (!cloudConfig.endpointUrl.trim()) {
+      setCloudStatus({ ok: false, message: 'Enter your Cloudflare Worker /v1/snapshot URL first.' });
+      return;
+    }
+    setTestingCloud(true);
+    setCloudStatus(null);
+    try {
+      const res = await fetch('/api/cloud/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weather: config.weather, cloud: cloudConfig }),
+      });
+      const data = (await res.json()) as {
+        ok: boolean;
+        weatherSource?: string;
+        temperature?: number;
+        alertsCount?: number;
+        usAqi?: number | null;
+        marketSymbols?: string[];
+        error?: string;
+      };
+      if (data.ok) {
+        const parts: string[] = [];
+        if (data.weatherSource) {
+          parts.push(`Weather: ${data.weatherSource} (${data.temperature ?? '?'}°)`);
+        }
+        if (typeof data.usAqi === 'number') {
+          parts.push(`AQI ${data.usAqi}`);
+        }
+        if (typeof data.alertsCount === 'number') {
+          parts.push(`${data.alertsCount} alert${data.alertsCount === 1 ? '' : 's'}`);
+        }
+        if (data.marketSymbols && data.marketSymbols.length > 0) {
+          parts.push(`Market: ${data.marketSymbols.join(', ')}`);
+        }
+        setCloudStatus({
+          ok: true,
+          message: `Connected! ${parts.join(' · ') || 'Snapshot received.'}`,
+        });
+      } else {
+        setCloudStatus({ ok: false, message: data.error ?? 'Cloud connection failed.' });
+      }
+    } catch {
+      setCloudStatus({ ok: false, message: 'Network error testing Cloud Data Hub.' });
+    } finally {
+      setTestingCloud(false);
+    }
+  };
+
+  const rotationSlides =
+    config.display.rotationSlides && config.display.rotationSlides.length > 0
+      ? config.display.rotationSlides
+      : DEFAULT_ROTATION_SLIDES_UI;
+
+  const worldClockCities =
+    config.display.worldClockCities && config.display.worldClockCities.length > 0
+      ? config.display.worldClockCities
+      : DEFAULT_WORLD_CLOCK_CITIES_UI;
+
+  const toggleRotationSlide = (slideId: BoardSlideId, checked: boolean) => {
+    const next = checked
+      ? DEFAULT_ROTATION_SLIDES_UI.filter((id) => id === slideId || rotationSlides.includes(id))
+      : rotationSlides.filter((id) => id !== slideId);
+    setConfig((prev) =>
+      prev
+        ? {
+            ...prev,
+            display: {
+              ...prev.display,
+              rotationSlides: next.length > 0 ? next : ['calendar'],
+            },
+          }
+        : prev
+    );
+  };
+
+  const updateWorldClockCity = (id: string, patch: Partial<WorldClockCity>) => {
+    setConfig((prev) =>
+      prev
+        ? {
+            ...prev,
+            display: {
+              ...prev.display,
+              worldClockCities: worldClockCities.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+            },
+          }
+        : prev
+    );
+  };
+
+  const addWorldClockCity = () => {
+    const next: WorldClockCity = {
+      id: `city-${Date.now()}`,
+      name: '',
+      timezone: 'America/New_York',
+      subtitle: '',
+    };
+    setConfig((prev) =>
+      prev
+        ? {
+            ...prev,
+            display: {
+              ...prev.display,
+              worldClockCities: [...worldClockCities, next],
+            },
+          }
+        : prev
+    );
+  };
+
+  const removeWorldClockCity = (id: string) => {
+    setConfig((prev) =>
+      prev
+        ? {
+            ...prev,
+            display: {
+              ...prev.display,
+              worldClockCities: worldClockCities.filter((c) => c.id !== id),
+            },
+          }
+        : prev
+    );
   };
 
   const handleSave = async () => {
@@ -709,6 +929,259 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
               )}
             </div>
           )}
+        </section>
+
+        {/* Cloud Data Hub Section */}
+        <section className="settings-card">
+          <div className="settings-card-header">
+            <div className="settings-card-title">
+              <Cloud size={18} />
+              <h2>Cloud Data Hub (Optional)</h2>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => void handleTestCloud()}
+              disabled={testingCloud}
+            >
+              {testingCloud ? 'Testing…' : 'Test Cloud Hub'}
+            </button>
+          </div>
+
+          <p className="tempest-help-text">
+            Route weather, NWS alerts, air quality, and market quotes through a unified Cloudflare
+            Worker endpoint (<code>POST /v1/snapshot</code>). Leave disabled to keep the Pi
+            fetching directly. When enabled, Tempest credentials automatically override Open-Meteo.
+          </p>
+
+          <div className="toggle-grid" style={{ marginBottom: 14 }}>
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={cloudConfig.enabled}
+                onChange={(e) => updateCloud({ enabled: e.target.checked })}
+              />
+              <span>Enable Cloud Data Hub</span>
+            </label>
+          </div>
+
+          <div className="form-grid">
+            <div className="form-field">
+              <label>Snapshot Endpoint URL</label>
+              <input
+                type="url"
+                className="input"
+                placeholder="https://homeboard-cloud-api.your-subdomain.workers.dev/v1/snapshot"
+                value={cloudConfig.endpointUrl}
+                onChange={(e) => updateCloud({ endpointUrl: e.target.value })}
+              />
+            </div>
+
+            <div className="form-field">
+              <label>API Key (Optional Bearer Token)</label>
+              <input
+                type="password"
+                className="input"
+                placeholder="Leave blank if endpoint is open"
+                value={cloudConfig.apiKey ?? ''}
+                onChange={(e) => updateCloud({ apiKey: e.target.value })}
+              />
+            </div>
+
+            <div className="form-field">
+              <label>Poll Interval (Seconds)</label>
+              <input
+                type="number"
+                min={30}
+                max={900}
+                className="input"
+                value={cloudConfig.pollSeconds}
+                onChange={(e) => updateCloud({ pollSeconds: Number(e.target.value) })}
+              />
+            </div>
+
+            {cloudConfig.modules.market && (
+              <div className="form-field">
+                <label>Market Symbols (Comma-Separated)</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="SPY, QQQ"
+                  value={symbolsInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSymbolsInput(val);
+                    const parsed = val
+                      .split(/[,\s]+/)
+                      .map((s) => s.trim().toUpperCase())
+                      .filter(Boolean);
+                    updateCloudModules({ marketSymbols: parsed });
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="toggle-grid" style={{ marginTop: 14 }}>
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={cloudConfig.modules.weather}
+                onChange={(e) => updateCloudModules({ weather: e.target.checked })}
+              />
+              <span>Weather (auto Tempest override → Open-Meteo fallback)</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={cloudConfig.modules.alerts}
+                onChange={(e) => updateCloudModules({ alerts: e.target.checked })}
+              />
+              <span>NWS Severe Weather Alerts banner</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={cloudConfig.modules.aqi}
+                onChange={(e) => updateCloudModules({ aqi: e.target.checked })}
+              />
+              <span>Air Quality (US AQI badge)</span>
+            </label>
+
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={cloudConfig.modules.market}
+                onChange={(e) => updateCloudModules({ market: e.target.checked })}
+              />
+              <span>Market Ticker quotes</span>
+            </label>
+          </div>
+
+          {cloudStatus && (
+            <div
+              className={`feed-test-result ${cloudStatus.ok ? 'test-ok' : 'test-err'}`}
+              style={{ marginTop: 12 }}
+            >
+              {cloudStatus.ok ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+              <span>{cloudStatus.message}</span>
+            </div>
+          )}
+        </section>
+
+        {/* Board Rotation & World Clock */}
+        <section className="settings-card">
+          <div className="settings-card-header">
+            <div className="settings-card-title">
+              <Globe size={18} />
+              <h2>Board Rotation &amp; World Clock</h2>
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={addWorldClockCity}
+              disabled={worldClockCities.length >= 6}
+            >
+              <Plus size={15} /> Add City
+            </button>
+          </div>
+
+          <div className="form-grid" style={{ marginBottom: 14 }}>
+            <div className="form-field">
+              <label>Rotation Interval (Seconds)</label>
+              <input
+                type="number"
+                min={10}
+                max={300}
+                className="input"
+                value={config.display.rotationIntervalSeconds ?? 25}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    display: {
+                      ...config.display,
+                      rotationIntervalSeconds: Number(e.target.value),
+                    },
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="toggle-grid" style={{ marginBottom: 16 }}>
+            <label className="toggle-item">
+              <input
+                type="checkbox"
+                checked={config.display.rotationEnabled ?? true}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    display: { ...config.display, rotationEnabled: e.target.checked },
+                  })
+                }
+              />
+              <span>Auto-rotate views below header</span>
+            </label>
+
+            {SLIDE_OPTIONS.map((slide) => (
+              <label key={slide.id} className="toggle-item">
+                <input
+                  type="checkbox"
+                  checked={rotationSlides.includes(slide.id)}
+                  onChange={(e) => toggleRotationSlide(slide.id, e.target.checked)}
+                />
+                <span>Include: {slide.label}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="calendar-feed-list">
+            {worldClockCities.map((city) => (
+              <div key={city.id} className="calendar-feed-row">
+                <div className="feed-row-top">
+                  <input
+                    type="text"
+                    className="input feed-name-input"
+                    placeholder="City name (e.g. Santa Fe)"
+                    value={city.name}
+                    onChange={(e) => updateWorldClockCity(city.id, { name: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="Subtitle (e.g. New Mexico)"
+                    value={city.subtitle ?? ''}
+                    onChange={(e) => updateWorldClockCity(city.id, { subtitle: e.target.value })}
+                  />
+                  <select
+                    className="input"
+                    value={city.timezone}
+                    onChange={(e) => updateWorldClockCity(city.id, { timezone: e.target.value })}
+                  >
+                    {!COMMON_TIMEZONES.includes(city.timezone) && (
+                      <option value={city.timezone}>{city.timezone}</option>
+                    )}
+                    {COMMON_TIMEZONES.map((tz) => (
+                      <option key={tz} value={tz}>
+                        {tz}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-danger-ghost btn-sm"
+                    onClick={() => removeWorldClockCity(city.id)}
+                    disabled={worldClockCities.length <= 1}
+                    title="Remove city"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Display Preferences */}

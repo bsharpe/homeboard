@@ -18,6 +18,8 @@ interface AgendaSidebarProps {
   eventsByDay: Map<string, CalendarEvent[]>;
   weather: WeatherData | null;
   market: MarketData | null;
+  showMarket?: boolean;
+  showForecast?: boolean;
 }
 
 function formatMarketSessionLabel(tradingDate: string, todayKey: string, isOpen: boolean): string {
@@ -37,6 +39,8 @@ export function AgendaSidebar({
   eventsByDay,
   weather,
   market,
+  showMarket = true,
+  showForecast = true,
 }: AgendaSidebarProps) {
   const groups = buildAgendaGroups(now, timezone, display.agendaDays, eventsByDay);
   const todayKey = getDateKeyInTimeZone(now, timezone);
@@ -146,7 +150,7 @@ export function AgendaSidebar({
         </div>
       </section>
 
-      {market && market.quotes.length > 0 && (
+      {showMarket && market && market.quotes.length > 0 && (
         <section className="market-panel" aria-label="Market Indices">
           <div className="market-grid">
             {market.quotes.map((quote) => {
@@ -190,7 +194,7 @@ export function AgendaSidebar({
         </section>
       )}
 
-      {forecastDays.length > 0 && (
+      {showForecast && forecastDays.length > 0 && (
         <section className="forecast-panel" aria-label="5-Day Weather Forecast">
           <div className="panel-header">
             <h2 className="panel-title">5-Day Forecast</h2>

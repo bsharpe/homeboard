@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import type { AppConfig, BoardPayload, CalendarFeedConfig } from '../shared/types.js';
 import { loadConfig, saveConfig } from './config.js';
 import { CalendarService, fetchAndParseFeed } from './calendar.js';
+import { CloudSyncService, testCloudEndpoint } from './cloud.js';
 import { MarketService } from './market.js';
 import {
   WeatherService,
@@ -23,30 +24,44 @@ app.use(express.json({ limit: '1mb' }));
 const weatherService = new WeatherService();
 const calendarService = new CalendarService();
 const marketService = new MarketService();
+const cloudService = new CloudSyncService();
 
 let currentConfig: AppConfig;
 let weatherTimer: NodeJS.Timeout | null = null;
 let calendarTimer: NodeJS.Timeout | null = null;
 let marketTimer: NodeJS.Timeout | null = null;
+let cloudTimer: NodeJS.Timeout | null = null;
 
 const MARKET_REFRESH_MS = 5 * 60_000;
+
+function isCloudActive(config: AppConfig): boolean {
+  return Boolean(config.cloud?.enabled && config.cloud.endpointUrl.trim().length > 0);
+}
 
 function scheduleBackgroundSync(): void {
   if (weatherTimer) clearInterval(weatherTimer);
   if (calendarTimer) clearInterval(calendarTimer);
   if (marketTimer) clearInterval(marketTimer);
-
-  weatherTimer = setInterval(() => {
-    void weatherService.refresh(currentConfig.weather);
-  }, currentConfig.refresh.weatherMinutes * 60_000);
+  if (cloudTimer) clearInterval(cloudTimer);
 
   calendarTimer = setInterval(() => {
     void calendarService.refreshAll(currentConfig.calendars);
   }, currentConfig.refresh.calendarMinutes * 60_000);
 
-  marketTimer = setInterval(() => {
-    void marketService.refresh();
-  }, MARKET_REFRESH_MS);
+  if (isCloudActive(currentConfig)) {
+    const pollMs = (currentConfig.cloud?.pollSeconds ?? 120) * 1000;
+    cloudTimer = setInterval(() => {
+      void cloudService.refresh(currentConfig);
+    }, pollMs);
+  } else {
+    weatherTimer = setInterval(() => {
+      void weatherService.refresh(currentConfig.weather);
+    }, currentConfig.refresh.weatherMinutes * 60_000);
+
+    marketTimer = setInterval(() => {
+      void marketService.refresh();
+    }, MARKET_REFRESH_MS);
+  }
 }
 
 app.get('/api/health', (_req, res) => {
@@ -54,25 +69,61 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.get('/api/board', (_req, res) => {
-  const weatherSnap = weatherService.getSnapshot();
-  const marketSnap = marketService.getSnapshot();
   const calSnap = calendarService.getSnapshot(
     currentConfig.calendars,
     currentConfig.display.demoMode,
     currentConfig.weather.timezone
   );
 
+  const cloudActive = isCloudActive(currentConfig);
+  const cloudSnap = cloudActive ? cloudService.getSnapshot() : null;
+  const cloudModules = currentConfig.cloud?.modules;
+
+  const weatherSnap = weatherService.getSnapshot();
+  const marketSnap = marketService.getSnapshot();
+
+  const weather = cloudActive
+    ? cloudModules?.weather
+      ? (cloudSnap?.data?.weather ?? null)
+      : null
+    : weatherSnap.data;
+
+  const weatherError = cloudActive
+    ? cloudSnap?.data?.errors?.weather ?? cloudSnap?.error
+    : weatherSnap.error;
+
+  const market = cloudActive
+    ? cloudModules?.market
+      ? (cloudSnap?.data?.market ?? null)
+      : null
+    : marketSnap.data;
+
+  const weatherAlerts =
+    cloudActive && cloudModules?.alerts ? (cloudSnap?.data?.alerts ?? []) : [];
+
+  const airQuality =
+    cloudActive && cloudModules?.aqi ? (cloudSnap?.data?.aqi ?? null) : null;
+
   const payload: BoardPayload = {
     serverTime: new Date().toISOString(),
     timezone: currentConfig.weather.timezone,
+    location: {
+      name: currentConfig.weather.name,
+      latitude: currentConfig.weather.latitude,
+      longitude: currentConfig.weather.longitude,
+    },
     display: currentConfig.display,
-    weather: weatherSnap.data,
-    weatherError: weatherSnap.error,
-    market: marketSnap.data,
+    weather,
+    weatherError,
+    weatherAlerts,
+    airQuality,
+    market,
     events: calSnap.events,
     calendarStatus: calSnap.status,
     usingDemoData: calSnap.usingDemoData,
     lastCalendarSyncAt: calSnap.lastSyncAt,
+    cloudEnabled: cloudActive,
+    cloudError: cloudActive ? cloudSnap?.error : undefined,
   };
 
   res.json(payload);
@@ -87,13 +138,27 @@ app.put('/api/config', async (req, res) => {
     const incoming = req.body as AppConfig;
     const prevWeatherKey = JSON.stringify(currentConfig.weather);
     const prevCalendarsKey = JSON.stringify(currentConfig.calendars);
+    const prevCloudKey = JSON.stringify(currentConfig.cloud);
 
     currentConfig = await saveConfig(incoming);
     scheduleBackgroundSync();
 
     const tasks: Promise<unknown>[] = [];
-    if (JSON.stringify(currentConfig.weather) !== prevWeatherKey) {
-      tasks.push(weatherService.refresh(currentConfig.weather));
+    if (isCloudActive(currentConfig)) {
+      if (
+        JSON.stringify(currentConfig.cloud) !== prevCloudKey ||
+        JSON.stringify(currentConfig.weather) !== prevWeatherKey
+      ) {
+        tasks.push(cloudService.refresh(currentConfig, { force: true }));
+      }
+    } else {
+      if (
+        JSON.stringify(currentConfig.weather) !== prevWeatherKey ||
+        JSON.stringify(currentConfig.cloud) !== prevCloudKey
+      ) {
+        tasks.push(weatherService.refresh(currentConfig.weather));
+        tasks.push(marketService.refresh());
+      }
     }
     if (JSON.stringify(currentConfig.calendars) !== prevCalendarsKey) {
       tasks.push(calendarService.refreshAll(currentConfig.calendars));
@@ -108,12 +173,51 @@ app.put('/api/config', async (req, res) => {
 });
 
 app.post('/api/refresh', async (_req, res) => {
-  await Promise.all([
-    weatherService.refresh(currentConfig.weather),
-    calendarService.refreshAll(currentConfig.calendars),
-    marketService.refresh(),
-  ]);
+  const tasks: Promise<unknown>[] = [calendarService.refreshAll(currentConfig.calendars)];
+  if (isCloudActive(currentConfig)) {
+    tasks.push(cloudService.refresh(currentConfig, { force: true }));
+  } else {
+    tasks.push(weatherService.refresh(currentConfig.weather));
+    tasks.push(marketService.refresh());
+  }
+  await Promise.all(tasks);
   res.json({ ok: true, refreshedAt: new Date().toISOString() });
+});
+
+app.post('/api/cloud/test', async (req, res) => {
+  const incoming = req.body as Partial<AppConfig> | undefined;
+  const testConfig: AppConfig = {
+    ...currentConfig,
+    weather: { ...currentConfig.weather, ...(incoming?.weather ?? {}) },
+    cloud: {
+      ...(currentConfig.cloud ?? {
+        enabled: true,
+        endpointUrl: '',
+        pollSeconds: 120,
+        modules: {
+          weather: true,
+          alerts: true,
+          aqi: true,
+          market: true,
+          marketSymbols: ['SPY', 'QQQ'],
+        },
+      }),
+      ...(incoming?.cloud ?? {}),
+      modules: {
+        ...(currentConfig.cloud?.modules ?? {
+          weather: true,
+          alerts: true,
+          aqi: true,
+          market: true,
+          marketSymbols: ['SPY', 'QQQ'],
+        }),
+        ...(incoming?.cloud?.modules ?? {}),
+      },
+    },
+  };
+
+  const result = await testCloudEndpoint(testConfig);
+  res.status(result.ok ? 200 : 400).json(result);
 });
 
 app.post('/api/calendars/test', async (req, res) => {
@@ -230,20 +334,27 @@ if (clientDistDir) {
 
 async function start(): Promise<void> {
   currentConfig = await loadConfig();
+  await cloudService.loadFromDisk();
   scheduleBackgroundSync();
 
   // Start HTTP server immediately so kiosk doesn't hang waiting on external APIs
   app.listen(PORT, HOST, () => {
     console.log(`[homeboard] Listening on http://${HOST}:${PORT}`);
     console.log(`[homeboard] Location: ${currentConfig.weather.name} (${currentConfig.weather.timezone})`);
+    if (isCloudActive(currentConfig)) {
+      console.log(`[homeboard] Cloud Data Hub enabled: ${currentConfig.cloud?.endpointUrl}`);
+    }
   });
 
   // Kick off initial background fetches
-  void Promise.all([
-    weatherService.refresh(currentConfig.weather),
-    calendarService.refreshAll(currentConfig.calendars),
-    marketService.refresh(),
-  ]);
+  const initialTasks: Promise<unknown>[] = [calendarService.refreshAll(currentConfig.calendars)];
+  if (isCloudActive(currentConfig)) {
+    initialTasks.push(cloudService.refresh(currentConfig));
+  } else {
+    initialTasks.push(weatherService.refresh(currentConfig.weather));
+    initialTasks.push(marketService.refresh());
+  }
+  void Promise.all(initialTasks);
 }
 
 void start();

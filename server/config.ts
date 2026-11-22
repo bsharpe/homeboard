@@ -1,6 +1,38 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { AppConfig, CalendarFeedConfig } from '../shared/types.js';
+import type {
+  AppConfig,
+  BoardSlideId,
+  CalendarFeedConfig,
+  CloudConfig,
+  WorldClockCity,
+} from '../shared/types.js';
+
+export const DEFAULT_ROTATION_SLIDES: BoardSlideId[] = [
+  'calendar',
+  'stocks',
+  'world-clock',
+  'forecast-radar',
+];
+
+export const DEFAULT_WORLD_CLOCK_CITIES: WorldClockCity[] = [
+  { id: 'santa-fe', name: 'Santa Fe', timezone: 'America/Denver', subtitle: 'New Mexico' },
+  { id: 'memphis', name: 'Memphis', timezone: 'America/Chicago', subtitle: 'Tennessee' },
+  { id: 'miami', name: 'Miami', timezone: 'America/New_York', subtitle: 'Florida' },
+];
+
+export const DEFAULT_CLOUD_CONFIG: CloudConfig = {
+  enabled: false,
+  endpointUrl: '',
+  pollSeconds: 120,
+  modules: {
+    weather: true,
+    alerts: true,
+    aqi: true,
+    market: true,
+    marketSymbols: ['SPY', 'QQQ'],
+  },
+};
 
 export const DEFAULT_CONFIG: AppConfig = {
   weather: {
@@ -29,12 +61,17 @@ export const DEFAULT_CONFIG: AppConfig = {
     seasonalAccents: true,
     ambientWeather: true,
     calendarWeather: true,
+    rotationEnabled: true,
+    rotationIntervalSeconds: 25,
+    rotationSlides: [...DEFAULT_ROTATION_SLIDES],
+    worldClockCities: structuredClone(DEFAULT_WORLD_CLOCK_CITIES),
   },
   refresh: {
     calendarMinutes: 10,
     weatherMinutes: 15,
   },
   calendars: [],
+  cloud: structuredClone(DEFAULT_CLOUD_CONFIG),
 };
 
 const DATA_DIR = process.env.HOMEBOARD_DATA_DIR
@@ -42,6 +79,10 @@ const DATA_DIR = process.env.HOMEBOARD_DATA_DIR
   : path.resolve(process.cwd(), 'data');
 
 const CONFIG_PATH = path.join(DATA_DIR, 'config.json');
+
+export function getDataDir(): string {
+  return DATA_DIR;
+}
 
 export function getConfigPath(): string {
   return CONFIG_PATH;
@@ -111,6 +152,38 @@ export function mergeWithDefaults(partial: Partial<AppConfig> | null | undefined
     typeof display.calendarWeather === 'boolean'
       ? display.calendarWeather
       : DEFAULT_CONFIG.display.calendarWeather;
+  display.rotationEnabled =
+    typeof display.rotationEnabled === 'boolean'
+      ? display.rotationEnabled
+      : true;
+  display.rotationIntervalSeconds = clamp(
+    display.rotationIntervalSeconds ?? 25,
+    10,
+    300,
+    25
+  );
+  const validSlideSet = new Set<BoardSlideId>(DEFAULT_ROTATION_SLIDES);
+  const rawSlides = Array.isArray(partial?.display?.rotationSlides)
+    ? partial.display.rotationSlides.filter((s): s is BoardSlideId => validSlideSet.has(s))
+    : DEFAULT_ROTATION_SLIDES;
+  display.rotationSlides =
+    rawSlides.length > 0 ? Array.from(new Set(rawSlides)) : [...DEFAULT_ROTATION_SLIDES];
+
+  const rawCities = Array.isArray(partial?.display?.worldClockCities)
+    ? partial.display.worldClockCities
+        .filter((c): c is WorldClockCity => Boolean(c && typeof c === 'object'))
+        .map((c, idx) => ({
+          id: typeof c.id === 'string' && c.id.trim() ? c.id.trim() : `city-${idx + 1}`,
+          name: typeof c.name === 'string' ? c.name.trim() : '',
+          timezone: typeof c.timezone === 'string' ? c.timezone.trim() : '',
+          subtitle:
+            typeof c.subtitle === 'string' && c.subtitle.trim() ? c.subtitle.trim() : undefined,
+        }))
+        .filter((c) => c.name.length > 0 && c.timezone.length > 0)
+        .slice(0, 6)
+    : [];
+  display.worldClockCities =
+    rawCities.length > 0 ? rawCities : structuredClone(DEFAULT_WORLD_CLOCK_CITIES);
 
   const refresh = {
     ...DEFAULT_CONFIG.refresh,
@@ -121,11 +194,60 @@ export function mergeWithDefaults(partial: Partial<AppConfig> | null | undefined
 
   const calendars = sanitizeCalendars(partial?.calendars);
 
+  const rawCloud = partial?.cloud;
+  const rawSymbols = Array.isArray(rawCloud?.modules?.marketSymbols)
+    ? rawCloud.modules.marketSymbols
+    : DEFAULT_CLOUD_CONFIG.modules.marketSymbols;
+  const cleanedSymbols = Array.from(
+    new Set(
+      rawSymbols
+        .filter((s): s is string => typeof s === 'string')
+        .map((s) => s.trim().toUpperCase())
+        .filter((s) => /^[A-Z0-9.^=-]{1,12}$/.test(s))
+    )
+  ).slice(0, 10);
+
+  const cloud: CloudConfig = {
+    enabled: typeof rawCloud?.enabled === 'boolean' ? rawCloud.enabled : DEFAULT_CLOUD_CONFIG.enabled,
+    endpointUrl:
+      typeof rawCloud?.endpointUrl === 'string' ? rawCloud.endpointUrl.trim() : '',
+    apiKey:
+      typeof rawCloud?.apiKey === 'string' && rawCloud.apiKey.trim().length > 0
+        ? rawCloud.apiKey.trim()
+        : undefined,
+    pollSeconds: clamp(
+      rawCloud?.pollSeconds ?? DEFAULT_CLOUD_CONFIG.pollSeconds,
+      30,
+      900,
+      DEFAULT_CLOUD_CONFIG.pollSeconds
+    ),
+    modules: {
+      weather:
+        typeof rawCloud?.modules?.weather === 'boolean'
+          ? rawCloud.modules.weather
+          : DEFAULT_CLOUD_CONFIG.modules.weather,
+      alerts:
+        typeof rawCloud?.modules?.alerts === 'boolean'
+          ? rawCloud.modules.alerts
+          : DEFAULT_CLOUD_CONFIG.modules.alerts,
+      aqi:
+        typeof rawCloud?.modules?.aqi === 'boolean'
+          ? rawCloud.modules.aqi
+          : DEFAULT_CLOUD_CONFIG.modules.aqi,
+      market:
+        typeof rawCloud?.modules?.market === 'boolean'
+          ? rawCloud.modules.market
+          : DEFAULT_CLOUD_CONFIG.modules.market,
+      marketSymbols: cleanedSymbols.length > 0 ? cleanedSymbols : ['SPY', 'QQQ'],
+    },
+  };
+
   return {
     weather,
     display,
     refresh,
     calendars,
+    cloud,
   };
 }
 
