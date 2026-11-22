@@ -121,8 +121,8 @@ body.board-mode::-webkit-scrollbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 12px 20px;
+  gap: 18px;
+  padding: 10px 18px;
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -145,7 +145,7 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .clock-time {
-  font-size: clamp(3.2rem, 4.6vw, 5.2rem);
+  font-size: clamp(3rem, 4.3vw, 4.9rem);
   font-weight: 700;
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
@@ -153,7 +153,7 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .clock-period {
-  font-size: clamp(1.2rem, 1.65vw, 1.85rem);
+  font-size: clamp(1.15rem, 1.55vw, 1.75rem);
   font-weight: 600;
   color: var(--accent-amber);
   text-transform: uppercase;
@@ -163,8 +163,9 @@ body.board-mode::-webkit-scrollbar {
 .header-weather {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 18px;
   flex: 1;
+  min-width: 0;
   justify-content: center;
 }
 
@@ -177,23 +178,25 @@ body.board-mode::-webkit-scrollbar {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex-shrink: 0;
 }
 
 .weather-current-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 58px;
-  height: 58px;
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .weather-current-main {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
 }
 
 .weather-temp-row {
@@ -203,16 +206,18 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .weather-temp {
-  font-size: clamp(1.9rem, 2.7vw, 2.8rem);
+  font-size: clamp(1.9rem, 2.6vw, 2.7rem);
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .weather-location-stack {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .weather-location {
@@ -222,17 +227,31 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .weather-condition {
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
+}
+
+.weather-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  flex-shrink: 0;
 }
 
 .weather-meta {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.weather-meta > span {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .weather-meta-icon {
@@ -245,8 +264,9 @@ body.board-mode::-webkit-scrollbar {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding-left: 20px;
+  padding-left: 18px;
   border-left: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .hourly-slot {
@@ -255,7 +275,7 @@ body.board-mode::-webkit-scrollbar {
   align-items: center;
   gap: 3px;
   min-width: 50px;
-  padding: 5px 6px;
+  padding: 5px 8px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.025);
 }
@@ -2894,12 +2914,14 @@ body.board-mode::-webkit-scrollbar {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.2;
   border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .aqi-badge-good {

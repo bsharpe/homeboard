@@ -37,7 +37,7 @@ export function HeaderBar({
   const windUnit = weather?.unit === 'celsius' ? 'km/h' : 'mph';
   const todayForecast = weather?.daily[0];
   const tomorrowForecast = weather?.daily[1];
-  const hourlyPreview = weather?.hourly.slice(0, 6) ?? [];
+  const hourlyPreview = weather?.hourly.slice(0, 4) ?? [];
   const moon = getMoonPhaseForDate(now);
   const moonIlluminationPct = Math.round(moon.illumination * 100);
   const solar = getSolarInfo(now, timezone, todayForecast, tomorrowForecast, display.clockFormat);
@@ -83,6 +83,49 @@ export function HeaderBar({
                   </span>
                   <span className="weather-condition">{weather.current.condition}</span>
                 </div>
+                {(airQuality ||
+                  uvBadge ||
+                  (weather.current.lightningCount !== undefined &&
+                    weather.current.lightningCount > 0)) && (
+                  <div className="weather-badges">
+                    {weather.current.lightningCount !== undefined &&
+                      weather.current.lightningCount > 0 && (
+                        <span
+                          className="lightning-badge"
+                          title={`${weather.current.lightningCount} lightning strike${
+                            weather.current.lightningCount === 1 ? '' : 's'
+                          } in the last hour`}
+                        >
+                          <Zap size={11} />{' '}
+                          {weather.current.lightningLastDist !== undefined
+                            ? `${weather.current.lightningLastDist} ${
+                                weather.unit === 'celsius' ? 'km' : 'mi'
+                              }`
+                            : `${weather.current.lightningCount}`}
+                        </span>
+                      )}
+                    {uvBadge && (
+                      <span
+                        className={`uv-badge uv-badge-${uvBadge.tone}`}
+                        title={`UV Index ${weather.current.uvIndex} (${uvBadge.label})`}
+                      >
+                        <Sun size={11} /> UV {uvBadge.value} {uvBadge.label}
+                      </span>
+                    )}
+                    {airQuality && (
+                      <span
+                        className={`aqi-badge aqi-badge-${airQuality.category
+                          .toLowerCase()
+                          .replace(/\s+/g, '-')}`}
+                        title={`US AQI ${airQuality.usAqi} (${airQuality.category})${
+                          airQuality.pm25 !== undefined ? ` · PM2.5 ${airQuality.pm25} µg/m³` : ''
+                        }`}
+                      >
+                        <Leaf size={11} /> AQI {airQuality.usAqi} {airQuality.category}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="weather-meta">
                 <span>Feels {weather.current.apparentTemperature}°</span>
@@ -111,40 +154,6 @@ export function HeaderBar({
                     {weather.unit === 'celsius'
                       ? `${weather.current.precipToday} mm`
                       : `${weather.current.precipToday}"`}
-                  </span>
-                )}
-                {weather.current.lightningCount !== undefined &&
-                  weather.current.lightningCount > 0 && (
-                    <span
-                      className="lightning-badge"
-                      title={`${weather.current.lightningCount} lightning strike${
-                        weather.current.lightningCount === 1 ? '' : 's'
-                      } in the last hour`}
-                    >
-                      <Zap size={11} />{' '}
-                      {weather.current.lightningLastDist !== undefined
-                        ? `${weather.current.lightningLastDist} ${
-                            weather.unit === 'celsius' ? 'km' : 'mi'
-                          }`
-                        : `${weather.current.lightningCount}`}
-                    </span>
-                  )}
-                {uvBadge && (
-                  <span
-                    className={`uv-badge uv-badge-${uvBadge.tone}`}
-                    title={`UV Index ${weather.current.uvIndex} (${uvBadge.label})`}
-                  >
-                    <Sun size={11} /> UV {uvBadge.value} {uvBadge.label}
-                  </span>
-                )}
-                {airQuality && (
-                  <span
-                    className={`aqi-badge aqi-badge-${airQuality.category.toLowerCase().replace(/\s+/g, '-')}`}
-                    title={`US AQI ${airQuality.usAqi} (${airQuality.category})${
-                      airQuality.pm25 !== undefined ? ` · PM2.5 ${airQuality.pm25} µg/m³` : ''
-                    }`}
-                  >
-                    <Leaf size={11} /> AQI {airQuality.usAqi} {airQuality.category}
                   </span>
                 )}
               </div>
