@@ -674,6 +674,14 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                       </div>
                       <button
                         type="button"
+                        className="btn btn-secondary btn-sm feed-test-btn"
+                        onClick={() => void testCalendar(cal)}
+                        disabled={testingId === cal.id}
+                      >
+                        {testingId === cal.id ? 'Testing…' : 'Test Feed'}
+                      </button>
+                      <button
+                        type="button"
                         className="btn btn-danger-ghost btn-sm"
                         onClick={() => removeCalendar(cal.id)}
                         title="Remove calendar"
@@ -690,14 +698,6 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                         value={cal.url}
                         onChange={(e) => updateCalendar(cal.id, { url: e.target.value })}
                       />
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => void testCalendar(cal)}
-                        disabled={testingId === cal.id}
-                      >
-                        {testingId === cal.id ? 'Testing…' : 'Test Feed'}
-                      </button>
                     </div>
 
                     {test && (
