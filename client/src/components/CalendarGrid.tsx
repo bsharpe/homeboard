@@ -22,6 +22,7 @@ import { WeatherIcon } from './WeatherIcon';
 interface CalendarGridProps {
   now: Date;
   timezone: string;
+  latitude?: number;
   display: DisplayConfig;
   eventsByDay: Map<string, CalendarEvent[]>;
   calendarStatus: CalendarSyncStatus[];
@@ -33,6 +34,7 @@ const MAX_PILLS_PER_DAY = 4;
 export function CalendarGrid({
   now,
   timezone,
+  latitude,
   display,
   eventsByDay,
   calendarStatus,
@@ -112,7 +114,7 @@ export function CalendarGrid({
           const showMonthPrefix = day.dayNumber === 1 || idx === 0;
           const visibleEvents = day.events.slice(0, MAX_PILLS_PER_DAY);
           const overflowCount = day.events.length - visibleEvents.length;
-          const holiday = getHolidayForDateKey(day.dateKey);
+          const holiday = getHolidayForDateKey(day.dateKey, { timezone, latitude });
           const moon = getMoonPhaseForDateKey(day.dateKey);
           const hasCelebration = dayHasCelebration(day.events);
           const dayForecast = forecastByDay.get(day.dateKey);

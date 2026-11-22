@@ -1970,7 +1970,13 @@ body.board-mode::-webkit-scrollbar {
   .hol-firework,
   .hol-heart,
   .hol-shamrock,
-  .hol-egg {
+  .hol-egg,
+  .hol-sun-spin,
+  .hol-sun-pulse,
+  .hol-sprout,
+  .hol-petal,
+  .hol-moon-rock,
+  .hol-crystal-glow {
     animation: none !important;
   }
 }
@@ -2106,6 +2112,38 @@ body.board-mode::-webkit-scrollbar {
   border-color: rgba(196, 181, 253, 0.3);
 }
 
+.day-cell-holiday-spring-equinox {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(52, 211, 153, 0.15), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(249, 168, 212, 0.13), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(52, 211, 153, 0.32);
+}
+
+.day-cell-holiday-summer-solstice {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(251, 191, 36, 0.18), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(251, 146, 60, 0.12), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(251, 191, 36, 0.36);
+}
+
+.day-cell-holiday-autumn-equinox {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(245, 158, 11, 0.16), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(129, 140, 248, 0.13), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(245, 158, 11, 0.32);
+}
+
+.day-cell-holiday-winter-solstice {
+  background:
+    radial-gradient(ellipse 90% 80% at 95% 100%, rgba(56, 189, 248, 0.16), transparent 65%),
+    radial-gradient(ellipse 75% 65% at 10% 0%, rgba(99, 102, 241, 0.15), transparent 60%),
+    var(--bg-cell);
+  border-color: rgba(125, 211, 252, 0.32);
+}
+
 /* Holiday SVG animations */
 .hol-bat-1 {
   animation: hol-bat-fly 5.2s ease-in-out infinite;
@@ -2193,6 +2231,40 @@ body.board-mode::-webkit-scrollbar {
 
 .hol-egg {
   animation: hol-egg-wobble 4.8s ease-in-out infinite;
+}
+
+.hol-sun-spin {
+  animation: hol-sun-rotate 26s linear infinite;
+}
+
+.hol-sun-pulse {
+  animation: hol-sun-breathe 4.6s ease-in-out infinite;
+}
+
+.hol-sprout {
+  animation: hol-sprout-sway 5.4s ease-in-out infinite;
+}
+
+.hol-petal {
+  animation: hol-petal-drift 6.2s ease-in-out infinite;
+}
+
+.hol-petal-2 {
+  animation-delay: 2s;
+  animation-duration: 6.8s;
+}
+
+.hol-petal-3 {
+  animation-delay: 3.9s;
+  animation-duration: 5.6s;
+}
+
+.hol-moon-rock {
+  animation: wi-moon-rock 6.2s ease-in-out infinite;
+}
+
+.hol-crystal-glow {
+  animation: hol-crystal-pulse 5s ease-in-out infinite;
 }
 
 @keyframes moon-full-glow {
@@ -2326,6 +2398,65 @@ body.board-mode::-webkit-scrollbar {
   }
   50% {
     transform: rotate(3deg);
+  }
+}
+
+@keyframes hol-sun-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hol-sun-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes hol-sprout-sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3.5deg);
+  }
+}
+
+@keyframes hol-petal-drift {
+  0% {
+    transform: translate(0, -3px) rotate(-12deg);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.85;
+  }
+  55% {
+    transform: translate(-5px, 10px) rotate(16deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(4px, 22px) rotate(-10deg);
+    opacity: 0;
+  }
+}
+
+@keyframes hol-crystal-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: rotate(0deg) scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(15deg) scale(1.04);
   }
 }
 

@@ -308,6 +308,7 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
               <CalendarGrid
                 now={now}
                 timezone={timezone}
+                latitude={board.location?.latitude}
                 display={board.display}
                 eventsByDay={eventsByDay}
                 calendarStatus={board.calendarStatus}

@@ -208,5 +208,109 @@ export function HolidayAnimation({ holiday }: HolidayAnimationProps) {
           </svg>
         </div>
       );
+
+    case 'spring-equinox':
+      return (
+        <div className="holiday-scene holiday-scene-spring-equinox" aria-hidden="true">
+          <svg viewBox="0 0 80 64" fill="none" className="holiday-svg">
+            {/* Soft rising sun at equinox horizon */}
+            <circle cx="56" cy="48" r="15" fill="rgba(253, 224, 71, 0.16)" className="hol-sun-pulse" />
+            <path d="M44 48a12 12 0 0 1 24 0Z" fill="#fde047" opacity="0.82" />
+            {/* Horizon line */}
+            <line x1="28" y1="48" x2="74" y2="48" stroke="#6ee7b7" strokeWidth="1.3" strokeLinecap="round" opacity="0.7" />
+            {/* Fresh spring sprout & leaves */}
+            <g className="hol-sprout" style={{ transformOrigin: '42px 54px' }}>
+              <path d="M42 54c0-7 1.5-13 4-18" stroke="#34d399" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M43 44c-6-1-9-5-8-9 4-1 8 2 9 7" fill="#4ade80" opacity="0.85" />
+              <path d="M44.5 39c5-2 9-1 10 3-3 3-7 3-10 0" fill="#34d399" opacity="0.85" />
+            </g>
+            {/* Drifting spring blossom petals */}
+            <ellipse cx="26" cy="20" rx="3.2" ry="1.8" transform="rotate(-24 26 20)" fill="#f9a8d4" opacity="0.85" className="hol-petal hol-petal-1" />
+            <ellipse cx="62" cy="16" rx="2.8" ry="1.6" transform="rotate(28 62 16)" fill="#fbcfe8" opacity="0.8" className="hol-petal hol-petal-2" />
+            <ellipse cx="48" cy="12" rx="2.4" ry="1.4" transform="rotate(-14 48 12)" fill="#f9a8d4" opacity="0.75" className="hol-petal hol-petal-3" />
+          </svg>
+        </div>
+      );
+
+    case 'summer-solstice':
+      return (
+        <div className="holiday-scene holiday-scene-summer-solstice" aria-hidden="true">
+          <svg viewBox="0 0 80 64" fill="none" className="holiday-svg">
+            {/* Warm golden corona */}
+            <circle cx="56" cy="36" r="20" fill="rgba(251, 191, 36, 0.16)" className="hol-sun-pulse" />
+            <circle cx="56" cy="36" r="14" fill="rgba(251, 146, 60, 0.22)" className="hol-sun-pulse" />
+            {/* Rotating sunburst rays */}
+            <g className="hol-sun-spin" style={{ transformOrigin: '56px 36px' }} stroke="#fde047" strokeWidth="1.8" strokeLinecap="round">
+              <line x1="56" y1="15" x2="56" y2="21" />
+              <line x1="56" y1="51" x2="56" y2="57" />
+              <line x1="35" y1="36" x2="41" y2="36" />
+              <line x1="71" y1="36" x2="77" y2="36" />
+              <line x1="41.2" y1="21.2" x2="45.4" y2="25.4" />
+              <line x1="66.6" y1="46.6" x2="70.8" y2="50.8" />
+              <line x1="70.8" y1="21.2" x2="66.6" y2="25.4" />
+              <line x1="45.4" y1="46.6" x2="41.2" y2="50.8" />
+            </g>
+            {/* Radiant sun disc */}
+            <circle cx="56" cy="36" r="9.5" fill="#fbbf24" stroke="#fef08a" strokeWidth="1.4" />
+            {/* Sunbeam sparkles */}
+            <circle cx="28" cy="20" r="1.5" fill="#fde047" className="hol-star-glow" />
+            <circle cx="34" cy="48" r="1.3" fill="#fb923c" className="hol-star-glow" />
+          </svg>
+        </div>
+      );
+
+    case 'autumn-equinox':
+      return (
+        <div className="holiday-scene holiday-scene-autumn-equinox" aria-hidden="true">
+          <svg viewBox="0 0 80 64" fill="none" className="holiday-svg">
+            {/* Balanced equinox sun & twilight reflection */}
+            <circle cx="56" cy="44" r="15" fill="rgba(245, 158, 11, 0.16)" className="hol-sun-pulse" />
+            <path d="M44 44a12 12 0 0 1 24 0Z" fill="#f59e0b" opacity="0.82" />
+            <path d="M44 44a12 12 0 0 0 24 0Z" fill="#6366f1" opacity="0.48" />
+            <line x1="32" y1="44" x2="74" y2="44" stroke="#fcd34d" strokeWidth="1.3" strokeLinecap="round" opacity="0.78" />
+            {/* Falling swaying autumn leaves */}
+            <g className="hol-leaf hol-leaf-1">
+              <path d="M26 14c4 1 6 5 4 9-4 1-7-2-8-6 1-2 2-3 4-3Z" fill="#f59e0b" opacity="0.82" />
+              <path d="M24 15l5 7" stroke="#fde68a" strokeWidth="0.9" strokeLinecap="round" />
+            </g>
+            <g className="hol-leaf hol-leaf-2">
+              <path d="M46 10c4.5 1.5 6.5 5.5 3.8 9.2-4.5 1-7.5-2-8.2-5.8 1-2 2.4-3.4 4.4-3.4Z" fill="#ea580c" opacity="0.8" />
+              <path d="M44.5 11.5l4.5 6.5" stroke="#fed7aa" strokeWidth="0.9" strokeLinecap="round" />
+            </g>
+            {/* Dusk star */}
+            <circle cx="67" cy="22" r="1.4" fill="#c7d2fe" className="hol-star-glow" />
+          </svg>
+        </div>
+      );
+
+    case 'winter-solstice':
+      return (
+        <div className="holiday-scene holiday-scene-winter-solstice" aria-hidden="true">
+          <svg viewBox="0 0 80 64" fill="none" className="holiday-svg">
+            {/* Crisp crescent moon for longest night */}
+            <path
+              d="M36 16a9.5 9.5 0 1 0 10.5 13.8A7.6 7.6 0 1 1 36 16Z"
+              fill="#fef08a"
+              opacity="0.78"
+              className="hol-moon-rock"
+              style={{ transformOrigin: '36px 24px' }}
+            />
+            {/* Twinkling winter stars */}
+            <circle cx="20" cy="18" r="1.3" fill="#e0f2fe" className="hol-star-glow" />
+            <circle cx="66" cy="16" r="1.5" fill="#bae6fd" className="hol-star-glow" />
+            {/* Geometric 6-point winter crystal */}
+            <g className="hol-crystal-glow" style={{ transformOrigin: '58px 42px' }} stroke="#7dd3fc" strokeWidth="1.4" strokeLinecap="round">
+              <line x1="58" y1="29" x2="58" y2="55" />
+              <line x1="46.7" y1="35.5" x2="69.3" y2="48.5" />
+              <line x1="69.3" y1="35.5" x2="46.7" y2="48.5" />
+              <path d="M55.5 32.5L58 35l2.5-2.5M55.5 51.5L58 49l2.5 2.5" strokeWidth="1.1" />
+              <circle cx="58" cy="42" r="2.2" fill="#e0f2fe" stroke="none" />
+            </g>
+            {/* Gentle winter flurries */}
+            <circle cx="26" cy="34" r="1.3" fill="#e0f2fe" className="hol-flake hol-flake-1" />
+            <circle cx="42" cy="30" r="1.1" fill="#bae6fd" className="hol-flake hol-flake-2" />
+          </svg>
+        </div>
+      );
   }
 }
