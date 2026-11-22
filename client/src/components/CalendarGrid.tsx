@@ -10,6 +10,7 @@ import {
   formatEventTime,
   getWeekdayHeaders,
 } from '../utils/date';
+import { getCalendarAbbrev, getContrastTextColor } from '../utils/calendarBadge';
 import { dayHasCelebration, getEventDelight } from '../utils/eventDelight';
 import { getHolidayForDateKey } from '../utils/holidays';
 import { getMoonPhaseForDateKey } from '../utils/moon';
@@ -28,22 +29,6 @@ interface CalendarGridProps {
 }
 
 const MAX_PILLS_PER_DAY = 4;
-
-function getContrastTextColor(hex: string): string {
-  const cleaned = hex.replace('#', '');
-  if (cleaned.length !== 6) return '#090d16';
-  const r = parseInt(cleaned.slice(0, 2), 16) / 255;
-  const g = parseInt(cleaned.slice(2, 4), 16) / 255;
-  const b = parseInt(cleaned.slice(4, 6), 16) / 255;
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.52 ? '#090d16' : '#ffffff';
-}
-
-function getCalendarAbbrev(name: string, custom?: string): string {
-  if (custom && custom.trim()) return custom.trim().slice(0, 2).toUpperCase();
-  const trimmed = name.trim();
-  return trimmed ? trimmed[0].toUpperCase() : '•';
-}
 
 export function CalendarGrid({
   now,

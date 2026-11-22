@@ -1,5 +1,12 @@
 import { Calendar, Droplets, MapPin, Minus, TrendingDown, TrendingUp } from 'lucide-react';
-import type { CalendarEvent, DisplayConfig, MarketData, WeatherData } from '../../../shared/types';
+import type {
+  CalendarEvent,
+  CalendarSyncStatus,
+  DisplayConfig,
+  MarketData,
+  WeatherData,
+} from '../../../shared/types';
+import { getCalendarAbbrev, getContrastTextColor } from '../utils/calendarBadge';
 import {
   buildAgendaGroups,
   formatEventTimeRange,
@@ -16,6 +23,7 @@ interface AgendaSidebarProps {
   timezone: string;
   display: DisplayConfig;
   eventsByDay: Map<string, CalendarEvent[]>;
+  calendarStatus?: CalendarSyncStatus[];
   weather: WeatherData | null;
   market: MarketData | null;
   showMarket?: boolean;
@@ -37,6 +45,7 @@ export function AgendaSidebar({
   timezone,
   display,
   eventsByDay,
+  calendarStatus = [],
   weather,
   market,
   showMarket = true,
@@ -44,6 +53,11 @@ export function AgendaSidebar({
 }: AgendaSidebarProps) {
   const groups = buildAgendaGroups(now, timezone, display.agendaDays, eventsByDay);
   const todayKey = getDateKeyInTimeZone(now, timezone);
+
+  const abbrevByCalendarId = new Map<string, string>();
+  for (const cal of calendarStatus) {
+    abbrevByCalendarId.set(cal.id, getCalendarAbbrev(cal.name, cal.abbreviation));
+  }
 
   const forecastDays = weather?.daily.slice(0, 5) ?? [];
   const weekMin = forecastDays.length
@@ -109,6 +123,18 @@ export function AgendaSidebar({
                           <div className="agenda-item-body">
                             <div className="agenda-item-top">
                               <span className="agenda-item-title-wrap">
+                                <span
+                                  className="agenda-cal-badge"
+                                  style={{
+                                    backgroundColor: ev.color,
+                                    color: getContrastTextColor(ev.color),
+                                  }}
+                                  aria-label={ev.calendarName}
+                                >
+                                  {ev.calendarAbbrev?.trim() ||
+                                    abbrevByCalendarId.get(ev.calendarId) ||
+                                    getCalendarAbbrev(ev.calendarName)}
+                                </span>
                                 {delight && <EventDelightIcon kind={delight.kind} size={13} />}
                                 <span className="agenda-item-title">{ev.title}</span>
                               </span>

@@ -319,6 +319,7 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
                 timezone={timezone}
                 display={board.display}
                 eventsByDay={eventsByDay}
+                calendarStatus={board.calendarStatus}
                 weather={board.weather}
                 market={board.market}
                 showMarket={!activeSlides.includes('stocks')}

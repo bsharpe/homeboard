@@ -769,6 +769,7 @@ body.board-mode::-webkit-scrollbar {
 }
 
 .event-cal-badge,
+.agenda-cal-badge,
 .legend-badge {
   display: inline-flex;
   align-items: center;
@@ -784,6 +785,12 @@ body.board-mode::-webkit-scrollbar {
   width: 16px;
   height: 16px;
   font-size: 0.64rem;
+}
+
+.agenda-cal-badge {
+  width: 18px;
+  height: 18px;
+  font-size: 0.68rem;
 }
 
 .legend-badge {
