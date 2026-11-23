@@ -116,10 +116,6 @@ export function AgendaSidebar({
                             .filter(Boolean)
                             .join(' ')}
                         >
-                          <span
-                            className="agenda-color-bar"
-                            style={{ backgroundColor: ev.color }}
-                          />
                           <div className="agenda-item-body">
                             <div className="agenda-item-top">
                               <span className="agenda-item-title-wrap">

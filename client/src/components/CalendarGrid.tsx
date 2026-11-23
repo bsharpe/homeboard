@@ -199,14 +199,7 @@ export function CalendarGrid({
                         .filter(Boolean)
                         .join(' ')}
                       style={
-                        ev.allDay
-                          ? {
-                              backgroundColor: `${ev.color}24`,
-                              borderLeftColor: ev.color,
-                            }
-                          : {
-                              borderLeftColor: ev.color,
-                            }
+                        ev.allDay ? { backgroundColor: `${ev.color}24` } : undefined
                       }
                       title={`${ev.calendarName}: ${ev.title}`}
                     >
