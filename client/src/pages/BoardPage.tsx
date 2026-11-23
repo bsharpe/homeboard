@@ -351,6 +351,7 @@ export function BoardPage({ onOpenSettings }: BoardPageProps) {
               now={now}
               timezone={timezone}
               theme={resolvedTheme}
+              clockFormat={board.display.clockFormat}
               location={
                 board.location ?? {
                   name: board.weather?.locationName ?? 'Santa Fe, NM',

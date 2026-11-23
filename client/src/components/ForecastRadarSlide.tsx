@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Droplets, Radio, Sunrise, Sunset } from 'lucide-react';
 import type { WeatherData } from '../../../shared/types';
-import { formatShortWeekday, getDateKeyInTimeZone } from '../utils/date';
+import { formatHourlyLabel, formatShortWeekday, getDateKeyInTimeZone } from '../utils/date';
 import { WeatherIcon } from './WeatherIcon';
 
 interface ForecastRadarSlideProps {
   now: Date;
   timezone: string;
   theme: 'dark' | 'light';
+  clockFormat: '12h' | '24h';
   location: {
     name: string;
     latitude: number;
@@ -58,6 +59,7 @@ export function ForecastRadarSlide({
   now,
   timezone,
   theme,
+  clockFormat,
   location,
   weather,
 }: ForecastRadarSlideProps) {
@@ -147,6 +149,7 @@ export function ForecastRadarSlide({
   const weekMax = forecastDays.length ? Math.max(...forecastDays.map((d) => d.tempMax)) : 100;
   const tempSpan = Math.max(1, weekMax - weekMin);
   const todayForecast = forecastDays[0];
+  const nextSixHours = weather?.hourly.slice(0, 6) ?? [];
 
   const activeFrame = frames[frameIndex];
   const frameTimeLabel = activeFrame
@@ -181,33 +184,65 @@ export function ForecastRadarSlide({
                 key={day.date}
                 className={`forecast-exp-row ${isToday ? 'forecast-exp-today' : ''}`}
               >
-                <div className="forecast-exp-day">
-                  <span className="forecast-exp-weekday">
-                    {formatShortWeekday(day.date, todayKey)}
-                  </span>
-                  <span className="forecast-exp-condition">{day.condition}</span>
-                </div>
-
-                <div className="forecast-exp-icon">
-                  <WeatherIcon code={day.weatherCode} isDay={true} size={32} />
-                  {day.precipitationProbability >= 10 ? (
-                    <span className="forecast-precip">
-                      <Droplets size={11} />
-                      {day.precipitationProbability}%
+                <div className="forecast-exp-main">
+                  <div className="forecast-exp-day">
+                    <span className="forecast-exp-weekday">
+                      {formatShortWeekday(day.date, todayKey)}
                     </span>
-                  ) : (
-                    <span className="forecast-precip-empty" />
-                  )}
+                    <span className="forecast-exp-condition">{day.condition}</span>
+                  </div>
+
+                  <div className="forecast-exp-icon">
+                    <WeatherIcon code={day.weatherCode} isDay={true} size={32} />
+                    {day.precipitationProbability >= 10 ? (
+                      <span className="forecast-precip">
+                        <Droplets size={11} />
+                        {day.precipitationProbability}%
+                      </span>
+                    ) : (
+                      <span className="forecast-precip-empty" />
+                    )}
+                  </div>
+
+                  <span className="forecast-exp-low">{day.tempMin}°</span>
+                  <div className="forecast-bar-track forecast-bar-track-lg">
+                    <div
+                      className="forecast-bar-fill"
+                      style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                    />
+                  </div>
+                  <span className="forecast-exp-high">{day.tempMax}°</span>
                 </div>
 
-                <span className="forecast-exp-low">{day.tempMin}°</span>
-                <div className="forecast-bar-track forecast-bar-track-lg">
-                  <div
-                    className="forecast-bar-fill"
-                    style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                  />
-                </div>
-                <span className="forecast-exp-high">{day.tempMax}°</span>
+                {isToday && nextSixHours.length > 0 && (
+                  <div className="forecast-today-hours" aria-label="Next 6 hours">
+                    {nextSixHours.map((slot) => (
+                      <div
+                        key={slot.time}
+                        className="forecast-hour"
+                        title={`${formatHourlyLabel(slot.time, clockFormat)} · ${slot.condition} · ${slot.temperature}°`}
+                      >
+                        <span className="forecast-hour-time">
+                          {formatHourlyLabel(slot.time, clockFormat)}
+                        </span>
+                        <WeatherIcon code={slot.weatherCode} isDay={slot.isDay} size={22} />
+                        <span className="forecast-hour-temp">{slot.temperature}°</span>
+                        <span
+                          className={`forecast-hour-precip${
+                            slot.precipitationProbability >= 10 ? '' : ' forecast-hour-precip-empty'
+                          }`}
+                        >
+                          {slot.precipitationProbability >= 10 && (
+                            <>
+                              <Droplets size={10} />
+                              {slot.precipitationProbability}%
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -217,12 +252,12 @@ export function ForecastRadarSlide({
           <div className="forecast-sun-footer">
             {todayForecast.sunrise && (
               <span className="forecast-sun-item">
-                <Sunrise size={15} /> Sunrise {formatLocalTimeFromIso(todayForecast.sunrise)}
+                <Sunrise size={15} /> Sunrise {formatLocalTimeFromIso(todayForecast.sunrise, clockFormat)}
               </span>
             )}
             {todayForecast.sunset && (
               <span className="forecast-sun-item">
-                <Sunset size={15} /> Sunset {formatLocalTimeFromIso(todayForecast.sunset)}
+                <Sunset size={15} /> Sunset {formatLocalTimeFromIso(todayForecast.sunset, clockFormat)}
               </span>
             )}
           </div>
