@@ -66,7 +66,7 @@ export function StocksSlide({ now, timezone, market }: StocksSlideProps) {
             const dollarChange = quote.price - quote.previousClose;
             const dollarSign = dollarChange > 0 ? '+' : dollarChange < 0 ? '-' : '';
             const dollarText = `${dollarSign}$${Math.abs(dollarChange).toFixed(2)}`;
-            const pctText = `${sign}${quote.changePercent.toFixed(2)}%`;
+            const pctText = `${sign}${quote.changePercent.toFixed(1)}%`;
 
             return (
               <div
