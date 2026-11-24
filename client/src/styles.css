@@ -3478,7 +3478,7 @@ body.board-mode::-webkit-scrollbar {
   color: var(--text-primary);
 }
 
-.stock-hero-pct {
+.stock-hero-price {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -3487,29 +3487,30 @@ body.board-mode::-webkit-scrollbar {
   font-size: 1.25rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: rgba(148, 163, 184, 0.15);
 }
 
 .stock-pct-up {
-  background: rgba(16, 185, 129, 0.18);
   color: #34d399;
 }
 
 .stock-pct-down {
-  background: rgba(244, 63, 94, 0.18);
   color: #fb7185;
 }
 
 .stock-pct-flat {
-  background: rgba(148, 163, 184, 0.15);
   color: var(--text-secondary);
 }
 
-.stock-hero-price {
+.stock-hero-pct {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: clamp(2.6rem, 4.5vw, 4rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
   line-height: 1;
 }
 

@@ -75,19 +75,19 @@ export function StocksSlide({ now, timezone, market }: StocksSlideProps) {
               >
                 <div className="stock-hero-top">
                   <span className="stock-hero-symbol">{quote.symbol}</span>
-                  <span className={`stock-hero-pct stock-pct-${direction}`}>
-                    {direction === 'up' ? (
-                      <TrendingUp size={20} />
-                    ) : direction === 'down' ? (
-                      <TrendingDown size={20} />
-                    ) : (
-                      <Minus size={20} />
-                    )}
-                    {pctText}
-                  </span>
+                  <span className="stock-hero-price">${quote.price.toFixed(2)}</span>
                 </div>
 
-                <div className="stock-hero-price">${quote.price.toFixed(2)}</div>
+                <div className={`stock-hero-pct stock-pct-${direction}`}>
+                  {direction === 'up' ? (
+                    <TrendingUp size={40} />
+                  ) : direction === 'down' ? (
+                    <TrendingDown size={40} />
+                  ) : (
+                    <Minus size={40} />
+                  )}
+                  {pctText}
+                </div>
 
                 <div className="stock-hero-footer">
                   <span className={`stock-hero-delta stock-delta-${direction}`}>
